@@ -26,7 +26,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[https://creativeaglemedia.co.ke],
+    allow_origins=["https://creativeaglemedia.co.ke"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
