@@ -7,13 +7,13 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
-    ADMIN_EMAIL: str = "admin@cemtech.dev"
-    ADMIN_PASSWORD: str = "changeme123"
+    ADMIN_EMAIL: str = "creativeaglemedia@gmail.com"
+    ADMIN_PASSWORD: str = "codewithcem3932"
 
     UPLOAD_DIR: str = "uploads"
     MAX_FILE_SIZE_MB: int = 50
 
-    FRONTEND_URL: str = "http://localhost:5173"
+    FRONTEND_URL: str = "https://creativeaglemedia.co.ke"
 
     # Resend email
     RESEND_API_KEY: str = ""
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     MPESA_CONSUMER_SECRET: str = ""
     MPESA_SHORTCODE: str = "174379"       # Daraja sandbox default
     MPESA_PASSKEY: str = ""
-    MPESA_CALLBACK_URL: str = "https://yourdomain.com/api/mpesa/callback"
+    MPESA_CALLBACK_URL: str = "https://creativeaglemedia.co.ke/api/mpesa/callback"
     MPESA_ENV: str = "sandbox"            # "sandbox" or "production"
 
     class Config:
