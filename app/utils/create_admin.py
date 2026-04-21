@@ -26,6 +26,7 @@ def create_admin():
         email=email,
         hashed_password=hashed_password,
         is_active=True
+        is_admin=True
     )
 
     db.add(admin)
