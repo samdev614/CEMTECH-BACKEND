@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from pathlib import Path
 
 class Settings(BaseSettings):
@@ -7,8 +8,8 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
-    ADMIN_EMAIL: str = "creativeaglemedia@gmail.com"
-    ADMIN_PASSWORD: str = "codewithcem3932"
+    ADMIN_EMAIL: str = "admin@gmail.com"
+    ADMIN_PASSWORD: str = "password"
 
     UPLOAD_DIR: str = "uploads"
     MAX_FILE_SIZE_MB: int = 50
@@ -27,6 +28,14 @@ class Settings(BaseSettings):
     MPESA_PASSKEY: str = ""
     MPESA_CALLBACK_URL: str = "https://creativeaglemedia.co.ke/api/mpesa/callback"
     MPESA_ENV: str = "sandbox"            # "sandbox" or "production"
+
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def fix_postgres_url(cls, v: str) -> str:
+        # Render provides postgres:// but SQLAlchemy 2.x requires postgresql://
+        if v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql://", 1)
+        return v
 
     class Config:
         env_file = ".env"

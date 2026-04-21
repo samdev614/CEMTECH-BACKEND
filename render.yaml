@@ -1,0 +1,48 @@
+databases:
+  - name: cemtech-db
+    plan: free
+    databaseName: cemtech
+    user: cemtech
+
+services:
+  - type: web
+    name: cemtech-backend
+    plan: free
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cemtech-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://creativeaglemedia.co.ke
+      - key: ADMIN_EMAIL
+        value: creativeaglemedia@gmail.com
+      - key: ADMIN_PASSWORD
+        sync: false          # set this manually in the Render dashboard
+      - key: UPLOAD_DIR
+        value: uploads
+      - key: MAX_FILE_SIZE_MB
+        value: "50"
+      - key: RESEND_API_KEY
+        sync: false          # set manually in the Render dashboard
+      - key: EMAIL_FROM
+        value: "CEMTECH <noreply@creativeaglemedia.co.ke>"
+      - key: ADMIN_EMAIL_NOTIFY
+        value: creativeaglemedia@gmail.com
+      - key: MPESA_CONSUMER_KEY
+        sync: false          # set manually in the Render dashboard
+      - key: MPESA_CONSUMER_SECRET
+        sync: false
+      - key: MPESA_SHORTCODE
+        value: "174379"
+      - key: MPESA_PASSKEY
+        sync: false
+      - key: MPESA_CALLBACK_URL
+        sync: false          # set to https://<your-render-url>/api/mpesa/callback after deploy
+      - key: MPESA_ENV
+        value: sandbox
