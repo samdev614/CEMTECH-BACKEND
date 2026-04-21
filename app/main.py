@@ -12,6 +12,7 @@ import app.models.portfolio
 import app.models.product
 import app.models.booking
 import app.models.contact
+import app.models.user
 
 app = FastAPI(
     title="CEMTECH API",
