@@ -2,16 +2,13 @@ from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.models.user import User
 from app.core.security import hash_password
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
+from app.core.config import settings
 
 def create_admin():
     db: Session = SessionLocal()
 
-    email = os.getenv("ADMIN_EMAIL")
-    password = os.getenv("ADMIN_PASSWORD")
+    email = settings.ADMIN_EMAIL
+    password = settings.ADMIN_PASSWORD
 
     if not email or not password:
         print( "Admin credentials not set in .env")
