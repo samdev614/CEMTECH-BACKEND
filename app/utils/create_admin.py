@@ -25,7 +25,7 @@ def create_admin():
     admin = User(
         email=email,
         hashed_password=hashed_password,
-        is_active=True
+        is_active=True,
         is_admin=True
     )
 
