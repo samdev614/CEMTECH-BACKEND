@@ -10,7 +10,6 @@ router = APIRouter()
 
 @router.post("/login", response_model=TokenResponse)
 def login(data: LoginRequest, db: Session = Depends(get_db)):
-<<<<<<< HEAD
     # Normalize email (prevents hidden mismatch issues)
     email = data.email.strip().lower()
 
@@ -55,33 +54,3 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
 @router.get("/me", response_model=UserOut)
 def me(current_user=Depends(get_current_user)):
     return current_user
-=======
-
-    try:
-        # SUPPORT BOTH email OR username (VERY IMPORTANT)
-        user = db.query(User).filter(
-            (User.email == data.email) | (User.username == data.email)
-        ).first()
-
-        if not user:
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-
-        # FIX: make sure field name is correct
-        if not verify_password(data.password, user.password_hash):  
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-
-        if not user.is_active:
-            raise HTTPException(status_code=403, detail="Account disabled")
-
-        token = create_access_token({"sub": str(user.id)})
-
-        return {
-            "access_token": token,
-            "token_type": "bearer"
-        }
-
-    except Exception as e:
-        db.rollback()
-        print("LOGIN ERROR:", str(e))  
-        raise HTTPException(status_code=500, detail="Internal server error")
->>>>>>> 82c09338fc4c275278c5bcb12214637becf48c3a
