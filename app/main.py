@@ -44,6 +44,7 @@ app.include_router(mpesa_util, prefix="/api", tags=["Utils"])
 
 @app.on_event("startup")
 def startup_event():
+    Base.metadata.create_all(bind=engine)
     create_admin()
 
 # Serve uploaded files
