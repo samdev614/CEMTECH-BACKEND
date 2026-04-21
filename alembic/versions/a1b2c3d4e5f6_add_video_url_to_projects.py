@@ -16,8 +16,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column('projects', sa.Column('video_url', sa.String(), nullable=True))
+    # Table creation (including video_url) is handled by Base.metadata.create_all() at startup
+    pass
 
 
 def downgrade() -> None:
-    op.drop_column('projects', 'video_url')
+    pass
