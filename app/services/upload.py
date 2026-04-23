@@ -1,7 +1,16 @@
 import uuid
 from pathlib import Path
 from fastapi import HTTPException, UploadFile
+import cloudinary
+import cloudinary.uploader
 from app.core.config import settings
+
+cloudinary.config(
+    cloud_name=settings.CLOUDINARY_CLOUD_NAME,
+    api_key=settings.CLOUDINARY_API_KEY,
+    api_secret=settings.CLOUDINARY_API_SECRET,
+    secure=True
+)
 
 ALLOWED_IMAGES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 ALLOWED_FILES  = {"application/zip", "application/pdf", "application/octet-stream",
@@ -14,11 +23,12 @@ async def save_image(file: UploadFile) -> str:
     data = await file.read()
     if len(data) > MAX_BYTES:
         raise HTTPException(status_code=400, detail=f"File too large (max {settings.MAX_FILE_SIZE_MB}MB)")
-    ext = file.filename.rsplit(".", 1)[-1].lower()
-    filename = f"{uuid.uuid4().hex}.{ext}"
-    dest = Path(settings.UPLOAD_DIR) / "images" / filename
-    dest.write_bytes(data)
-    return f"/uploads/images/{filename}"
+
+    try:
+        upload_result = cloudinary.uploader.upload(data, folder="cemtech/images")
+        return upload_result.get("secure_url")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Cloudinary upload failed: {str(e)}")
 
 async def save_product_file(file: UploadFile) -> str:
     data = await file.read()
