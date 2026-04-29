@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api.routes import auth, blog, portfolio, products, bookings, contact
+from app.api.routes import auth, blog, portfolio, products, bookings, contact, documentation
 from app.api.routes.mpesa import buy_router as mpesa_buy, util_router as mpesa_util
 from app.utils.create_admin import create_admin
 import app.models.blog
@@ -13,6 +13,7 @@ import app.models.product
 import app.models.booking
 import app.models.contact
 import app.models.user
+import app.models.documentation
 
 app = FastAPI(
     title="CEMTECH API",
@@ -25,9 +26,10 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://creativeaglemedia.co.ke",
-                # "http://localhost:5174",
+         "https://creativeaglemedia.co.ke",
     ],
+        # "https://creativeaglemedia.co.ke",
+     
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,6 +43,7 @@ app.include_router(products.router, prefix="/api/products", tags=["Products"])
 app.include_router(mpesa_buy, prefix="/api/products", tags=["M-Pesa"])
 app.include_router(bookings.router, prefix="/api/bookings", tags=["Bookings"])
 app.include_router(contact.router, prefix="/api/contact", tags=["Contact"])
+app.include_router(documentation.router, prefix="/api/docs", tags=["Documentation"])
 app.include_router(mpesa_util, prefix="/api", tags=["Utils"])
 
 @app.on_event("startup")
