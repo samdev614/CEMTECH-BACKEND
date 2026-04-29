@@ -5,6 +5,7 @@ class ProjectCreate(BaseModel):
     title: str
     slug: str
     description: str | None = None
+    use_case: str | None = None
     category: str | None = None
     tags: str | None = None
     live_url: str | None = None
@@ -18,6 +19,7 @@ class ProjectUpdate(BaseModel):
     title: str | None = None
     slug: str | None = None
     description: str | None = None
+    use_case: str | None = None
     category: str | None = None
     tags: str | None = None
     live_url: str | None = None
@@ -32,6 +34,7 @@ class ProjectOut(BaseModel):
     title: str
     slug: str
     description: str | None
+    use_case: str | None
     category: str | None
     tags: str | None
     cover_image: str | None

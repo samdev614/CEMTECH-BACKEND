@@ -1,5 +1,8 @@
+import logging
 import resend
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 def _client():
@@ -10,13 +13,22 @@ def _client():
 
 def send_contact_notification(name: str, email: str, subject: str, message: str):
     """Alert admin about a new contact form submission."""
-    if not settings.RESEND_API_KEY or not settings.ADMIN_EMAIL_NOTIFY:
+    if not settings.RESEND_API_KEY:
+        logger.warning("Contact notification not sent: RESEND_API_KEY is not configured")
         return
+
+    recipient = settings.ADMIN_EMAIL_NOTIFY or settings.ADMIN_EMAIL
+    if not recipient:
+        logger.warning("Contact notification not sent: no admin recipient configured")
+        return
+
     _client()
     resend.Emails.send({
         "from": settings.EMAIL_FROM,
-        "to": [settings.ADMIN_EMAIL_NOTIFY],
+        "to": [recipient],
         "subject": f"New message: {subject or 'No subject'} — {name}",
+        "reply_to": email,
+        "text": f"New contact message from {name} <{email}>\n\nSubject: {subject or 'No subject'}\n\n{message}",
         "html": f"""
         <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
           <div style="background:#D4A020;padding:20px 32px;border-radius:8px 8px 0 0">
@@ -47,6 +59,8 @@ def send_contact_autoreply(name: str, email: str, subject: str):
         "from": settings.EMAIL_FROM,
         "to": [email],
         "subject": "Thanks for reaching out — I'll be in touch soon",
+        "reply_to": settings.EMAIL_FROM,
+        "text": f"Hi {name},\n\nThanks for getting in touch. I've received your message about \"{subject or 'your enquiry'}\" and will get back to you within 24 hours.\n\n— CEMTECH",
         "html": f"""
         <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
           <div style="background:#D4A020;padding:20px 32px;border-radius:8px 8px 0 0">

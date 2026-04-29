@@ -32,6 +32,7 @@ async def create_project(
     title: str = Form(...),
     slug: str = Form(...),
     description: str = Form(None),
+    use_case: str = Form(None),
     category: str = Form(None),
     tags: str = Form(None),
     live_url: str = Form(None),
@@ -49,9 +50,9 @@ async def create_project(
 
     image_path = await save_image(cover_image) if cover_image else None
     project = Project(
-        title=title, slug=slug, description=description, category=category,
-        tags=tags, live_url=live_url, video_url=video_url, source_url=source_url,
-        is_featured=is_featured, is_published=is_published,
+        title=title, slug=slug, description=description, use_case=use_case,
+        category=category, tags=tags, live_url=live_url, video_url=video_url,
+        source_url=source_url, is_featured=is_featured, is_published=is_published,
         sort_order=sort_order, cover_image=image_path,
     )
     db.add(project)
@@ -65,6 +66,7 @@ async def update_project(
     title: str = Form(None),
     slug: str = Form(None),
     description: str = Form(None),
+    use_case: str = Form(None),
     category: str = Form(None),
     tags: str = Form(None),
     live_url: str = Form(None),
@@ -82,9 +84,10 @@ async def update_project(
         raise HTTPException(status_code=404, detail="Project not found")
 
     for field, value in dict(
-        title=title, slug=slug, description=description, category=category,
-        tags=tags, live_url=live_url, video_url=video_url, source_url=source_url,
-        is_featured=is_featured, is_published=is_published, sort_order=sort_order,
+        title=title, slug=slug, description=description, use_case=use_case,
+        category=category, tags=tags, live_url=live_url, video_url=video_url,
+        source_url=source_url, is_featured=is_featured, is_published=is_published,
+        sort_order=sort_order,
     ).items():
         if value is not None:
             setattr(project, field, value)

@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "uploads"
     MAX_FILE_SIZE_MB: int = 50
 
-    FRONTEND_URL: str = "https://creativeaglemedia.co.ke"
-    BACKEND_URL: str = "https://cemtech-backend.onrender.com"
+    FRONTEND_URL: str = "FRONTEND_URL"   # https://creativeaglemedia.co.ke
+    BACKEND_URL: str = "BACKEND_URL" # https://cemtech-backend.onrender.com
     # Resend email
     RESEND_API_KEY: str = ""
     EMAIL_FROM: str = "CEMTECH <noreply@yourdomain.com>"

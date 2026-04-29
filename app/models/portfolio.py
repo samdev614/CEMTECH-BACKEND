@@ -15,6 +15,7 @@ class Project(Base):
     live_url     = Column(String)
     video_url    = Column(String)
     source_url   = Column(String)
+    use_case     = Column(Text)
     is_featured  = Column(Boolean, default=False)
     is_published = Column(Boolean, default=True)
     sort_order   = Column(Integer, default=0)
