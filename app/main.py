@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.core.database import engine, Base
 from app.api.routes import auth, blog, portfolio, products, bookings, contact, documentation
 from app.api.routes.mpesa import buy_router as mpesa_buy, util_router as mpesa_util
+from app.api.routes import settings as settings_routes
 from app.utils.create_admin import create_admin
 import app.models.blog
 import app.models.portfolio
@@ -14,6 +15,7 @@ import app.models.booking
 import app.models.contact
 import app.models.user
 import app.models.documentation
+import app.models.settings
 
 app = FastAPI(
     title="CEMTECH API",
@@ -44,6 +46,7 @@ app.include_router(mpesa_buy, prefix="/api/products", tags=["M-Pesa"])
 app.include_router(bookings.router, prefix="/api/bookings", tags=["Bookings"])
 app.include_router(contact.router, prefix="/api/contact", tags=["Contact"])
 app.include_router(documentation.router, prefix="/api/docs", tags=["Documentation"])
+app.include_router(settings_routes.router, prefix="/api/settings", tags=["Settings"])
 app.include_router(mpesa_util, prefix="/api", tags=["Utils"])
 
 @app.on_event("startup")
