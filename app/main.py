@@ -5,12 +5,17 @@ from pathlib import Path
 from app.core.config import settings
 from app.core.database import engine, Base
 from app.api.routes import auth, blog, portfolio, products, bookings, contact, documentation
+from app.api.routes import templates, presets, courses, tools
 from app.api.routes.mpesa import buy_router as mpesa_buy, util_router as mpesa_util
 from app.api.routes import settings as settings_routes
 from app.utils.create_admin import create_admin
 import app.models.blog
 import app.models.portfolio
 import app.models.product
+import app.models.template
+import app.models.preset
+import app.models.course
+import app.models.tool
 import app.models.booking
 import app.models.contact
 import app.models.user
@@ -43,6 +48,10 @@ app.include_router(blog.router, prefix="/api/blog", tags=["Blog"])
 app.include_router(portfolio.router, prefix="/api/portfolio", tags=["Portfolio"])
 app.include_router(products.router, prefix="/api/products", tags=["Products"])
 app.include_router(mpesa_buy, prefix="/api/products", tags=["M-Pesa"])
+app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
+app.include_router(presets.router, prefix="/api/presets", tags=["Presets"])
+app.include_router(courses.router, prefix="/api/courses", tags=["Courses"])
+app.include_router(tools.router, prefix="/api/tools", tags=["Tools"])
 app.include_router(bookings.router, prefix="/api/bookings", tags=["Bookings"])
 app.include_router(contact.router, prefix="/api/contact", tags=["Contact"])
 app.include_router(documentation.router, prefix="/api/docs", tags=["Documentation"])
