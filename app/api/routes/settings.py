@@ -9,7 +9,7 @@ from app.services.upload import save_image
 
 router = APIRouter()
 
-VALID_KEYS = {"web_dev", "video_prod", "marketing"}
+VALID_KEYS = {"software_dev", "video_prod", "marketing"}
 
 def _ensure_defaults(db: Session):
     """Seed the three rows if they don't exist yet."""
