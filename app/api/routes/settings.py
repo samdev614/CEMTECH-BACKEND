@@ -9,27 +9,9 @@ from app.services.upload import save_image
 
 router = APIRouter()
 
-VALID_KEYS = {"software_dev", "video_prod", "marketing"}
-OLD_KEYS = {"Web_dev", "web_dev"}  # Deprecated keys to migrate
-
-def _ensure_defaults(db: Session):
-    """Seed the three rows if they don't exist yet and migrate old keys."""
-    # Migrate old "Web_dev" or "web_dev" to "software_dev"
-    old_entry = db.query(ServiceMedia).filter(ServiceMedia.key.in_(OLD_KEYS)).first()
-    if old_entry:
-        old_entry.key = "software_dev"
-        db.commit()
-    
-    # Create missing valid keys
-    for key in VALID_KEYS:
-        if not db.query(ServiceMedia).filter(ServiceMedia.key == key).first():
-            db.add(ServiceMedia(key=key, media_url=None, media_type="image"))
-    db.commit()
-
 
 @router.get("/services", response_model=List[ServiceMediaOut])
 def get_services(db: Session = Depends(get_db)):
-    _ensure_defaults(db)
     return db.query(ServiceMedia).all()
 
 
@@ -42,7 +24,6 @@ async def update_service(
     db: Session = Depends(get_db),
     _=Depends(require_admin),
 ):
-    _ensure_defaults(db)
     row = db.query(ServiceMedia).filter(ServiceMedia.key == key).first()
     if not row:
         from fastapi import HTTPException

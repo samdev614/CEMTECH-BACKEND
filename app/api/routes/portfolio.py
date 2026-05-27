@@ -4,6 +4,7 @@ from typing import List
 from app.core.database import get_db
 from app.core.security import require_admin
 from app.models.portfolio import Project
+from app.core.utils import format_video_embed_url
 from app.schemas.portfolio import ProjectOut
 from app.services.upload import save_image
 
@@ -51,7 +52,7 @@ async def create_project(
     image_path = await save_image(cover_image) if cover_image else None
     project = Project(
         title=title, slug=slug, description=description, use_case=use_case,
-        category=category, tags=tags, live_url=live_url, video_url=video_url,
+        category=category, tags=tags, live_url=live_url, video_url=format_video_embed_url(video_url),
         source_url=source_url, is_featured=is_featured, is_published=is_published,
         sort_order=sort_order, cover_image=image_path,
     )
@@ -85,7 +86,7 @@ async def update_project(
 
     for field, value in dict(
         title=title, slug=slug, description=description, use_case=use_case,
-        category=category, tags=tags, live_url=live_url, video_url=video_url,
+        category=category, tags=tags, live_url=live_url, video_url=format_video_embed_url(video_url),
         source_url=source_url, is_featured=is_featured, is_published=is_published,
         sort_order=sort_order,
     ).items():

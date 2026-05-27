@@ -8,6 +8,7 @@ from pathlib import Path
 
 from app.core.database import get_db
 from app.models.product import Product, Order
+from app.models.course import Course # Import Course model
 from app.schemas.product import OrderOut
 from app.services.mpesa import stk_push
 from app.services.email import send_payment_confirmation
@@ -45,6 +46,52 @@ async def buy_product(slug: str, body: BuyRequest, db: Session = Depends(get_db)
     db.refresh(order)
 
     try:
+        # Ensure amount is an integer for M-Pesa
+        mpesa_amount = int(product.price)
+        if mpesa_amount <= 0:
+            raise HTTPException(status_code=400, detail="Product price must be greater than zero for M-Pesa payment.")
+
+        resp = await stk_push(
+            phone=body.phone,
+            amount=mpesa_amount,
+            order_id=order.id,
+            description=product.name,
+        )
+        order.mpesa_ref = resp.get("CheckoutRequestID", "")
+        db.commit()
+    except Exception as e:
+        order.status = "failed"
+        db.commit()
+        raise HTTPException(status_code=502, detail=f"M-Pesa push failed: {str(e)}")
+
+    return order
+
+
+@buy_router.post("/courses/{slug}/buy", response_model=OrderOut) # New endpoint for courses
+async def buy_course(slug: str, body: BuyRequest, db: Session = Depends(get_db)):
+    course = db.query(Course).filter(Course.slug == slug, Course.is_published == True).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    # Create an order for the course
+    order = Order(
+        course_id=course.id, # Link to course
+        item_type="course", # Specify item type
+        customer_name=body.name,
+        customer_email=body.email,
+        customer_phone=body.phone,
+        amount=course.price,
+        status="pending",
+    )
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+
+    try:
+        mpesa_amount = int(course.price)
+        if mpesa_amount <= 0:
+            raise HTTPException(status_code=400, detail="Course price must be greater than zero for M-Pesa payment.")
+
         resp = await stk_push(
             phone=body.phone,
             amount=int(product.price),
@@ -91,17 +138,33 @@ async def mpesa_callback(payload: dict, db: Session = Depends(get_db)):
             order.status = "paid"
             order.mpesa_ref = str(items.get("MpesaReceiptNumber", checkout_id))
             order.download_token = secrets.token_urlsafe(32)
-            product = db.query(Product).filter(Product.id == order.product_id).first()
-            if product:
-                product.sales_count = (product.sales_count or 0) + 1
+
+            item_name = "Your purchase"
+            download_file_path = None
+
+            if order.item_type == "product" and order.product_id:
+                product = db.query(Product).filter(Product.id == order.product_id).first()
+                if product:
+                    product.sales_count = (product.sales_count or 0) + 1
+                    item_name = product.name
+                    download_file_path = product.file_path
+            elif order.item_type == "course" and order.course_id:
+                course = db.query(Course).filter(Course.id == order.course_id).first()
+                if course:
+                    # For courses, instead of a download file, you might update enrollment status
+                    # or grant access. For now, we'll just use the course name.
+                    item_name = course.title
+                    # If courses have associated downloadable content, you'd set download_file_path here.
+                    # For now, let's assume course access is handled differently (e.g., via enrollment status).
+                    # If you want to enable a download for courses, you'd need a file_path on the Course model.
+
             db.commit()
             base_url = settings.MPESA_CALLBACK_URL.split('/api/')[0]
             download_url = f"{base_url}/api/download/{order.download_token}"
             try:
                 send_payment_confirmation(
                     order.customer_name, order.customer_email,
-                    product.name if product else "Your purchase",
-                    order.mpesa_ref, download_url,
+                    item_name, order.mpesa_ref, download_url,
                 )
             except Exception:
                 pass
@@ -124,22 +187,35 @@ def download_file(token: str, db: Session = Depends(get_db)):
     if not order:
         raise HTTPException(status_code=403, detail="Invalid or already used download link")
 
-    product = db.query(Product).filter(Product.id == order.product_id).first()
-    if not product or not product.file_path:
-        raise HTTPException(status_code=404, detail="File not found")
+    file_to_download = None
+    item_name = "item"
+
+    if order.item_type == "product" and order.product_id:
+        product = db.query(Product).filter(Product.id == order.product_id).first()
+        if product and product.file_path:
+            file_to_download = product.file_path
+            item_name = product.name
+    elif order.item_type == "course" and order.course_id:
+        # For courses, you might have a specific downloadable asset or grant access.
+        # If courses have a file_path, retrieve it here.
+        # For now, let's assume courses don't have a direct download file via this route.
+        raise HTTPException(status_code=400, detail="Course access is not via direct download link.")
+
+    if not file_to_download:
+        raise HTTPException(status_code=404, detail="Downloadable file not found for this order.")
 
     # file_path is stored as a URL path like /uploads/products/file.zip
     # strip the leading slash so Path resolves relative to the backend working directory
-    file_path = Path(product.file_path.lstrip('/'))
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="File not found on server")
+    actual_file_path = Path(file_to_download.lstrip('/'))
+    if not actual_file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found on server.")
 
-    order.download_used = True
+    order.download_used = True # Mark download as used
     db.commit()
 
-    media_type, _ = mimetypes.guess_type(str(file_path))
+    media_type, _ = mimetypes.guess_type(str(actual_file_path))
     return FileResponse(
-        path=str(file_path),
-        filename=product.name.replace(' ', '_') + file_path.suffix,
+        path=str(actual_file_path),
+        filename=item_name.replace(' ', '_') + actual_file_path.suffix,
         media_type=media_type or "application/octet-stream",
     )

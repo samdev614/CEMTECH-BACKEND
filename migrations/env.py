@@ -3,6 +3,17 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
+from app.core.database import Base
+# Import models here to ensure they are registered on the metadata
+from app.models.user import User
+from app.models.course import Course
+from app.models.product import Product, Order
+from app.models.portfolio import Project
+from app.models.blog import BlogPost
+from app.models.enrollment import Enrollment # New import
+from app.models.rating import CourseRating # New import
+from app.models.template import Template
+
 from alembic import context
 
 # this is the Alembic Config object, which provides
@@ -17,8 +28,7 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-target_metadata = None
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
