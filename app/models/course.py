@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Numeric
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 class Course(Base):
@@ -21,3 +22,6 @@ class Course(Base):
     sort_order   = Column(Integer, default=0)
     created_at   = Column(DateTime(timezone=True), server_default=func.now())
     updated_at   = Column(DateTime(timezone=True), onupdate=func.now())
+
+    enrollments = relationship("Enrollment", back_populates="course")
+    course_ratings = relationship("CourseRating", back_populates="course")

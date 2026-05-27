@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean, DECIMAL
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean, DECIMAL, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -21,5 +21,3 @@ class Enrollment(Base):
     __table_args__ = (
         UniqueConstraint('user_id', 'course_id', name='_user_course_uc'),
     )
-
-from sqlalchemy import UniqueConstraint
