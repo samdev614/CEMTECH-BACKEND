@@ -10,6 +10,23 @@ from app.services.upload import save_image
 
 router = APIRouter()
 
+def _format_preview_url(url: str | None) -> str | None:
+    """Helper to convert standard YouTube/Vimeo links to embeddable formats."""
+    if not url:
+        return url
+    # YouTube: convert watch?v= or youtu.be/ to /embed/
+    if "youtube.com/watch?v=" in url:
+        video_id = url.split("v=")[1].split("&")[0]
+        return f"https://www.youtube.com/embed/{video_id}"
+    if "youtu.be/" in url:
+        video_id = url.split("/")[-1].split("?")[0]
+        return f"https://www.youtube.com/embed/{video_id}"
+    # Vimeo: convert vimeo.com/ID to player.vimeo.com/video/ID
+    if "vimeo.com/" in url and "player.vimeo.com" not in url:
+        video_id = url.split("/")[-1].split("?")[0]
+        return f"https://player.vimeo.com/video/{video_id}"
+    return url
+
 
 @router.get("/", response_model=List[CourseOut])
 def list_courses(db: Session = Depends(get_db), category: str = None):
@@ -58,7 +75,7 @@ async def create_course(
     item = Course(
         title=title, slug=slug, description=description, category=category,
         price=price, duration=duration, level=level, instructor=instructor,
-        preview_url=preview_url, is_published=is_published, is_featured=is_featured,
+        preview_url=_format_preview_url(preview_url), is_published=is_published, is_featured=is_featured,
         sort_order=sort_order, cover_image=image_path,
     )
     db.add(item)
@@ -93,7 +110,7 @@ async def update_course(
     for field, value in dict(
         title=title, slug=slug, description=description, category=category,
         price=price, duration=duration, level=level, instructor=instructor,
-        preview_url=preview_url, is_published=is_published, is_featured=is_featured,
+        preview_url=_format_preview_url(preview_url), is_published=is_published, is_featured=is_featured,
         sort_order=sort_order,
     ).items():
         if value is not None:
