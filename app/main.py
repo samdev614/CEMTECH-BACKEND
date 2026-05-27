@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import ProgrammingError
 
 from app.core.database import SessionLocal
 from app.api.routes import (
@@ -34,6 +35,11 @@ async def lifespan(app: FastAPI):
     db = SessionLocal()
     try:
         _ensure_defaults_settings(db)
+    except ProgrammingError as e:
+        # Table doesn't exist yet - migrations may not have run
+        # Log the issue but don't crash the app
+        print(f"Warning: Could not seed defaults - {e}")
+        print("This is OK during initial migrations. Service media table will be created on next startup.")
     finally:
         db.close()
     yield
