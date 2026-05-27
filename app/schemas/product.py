@@ -41,7 +41,10 @@ class ProductOut(BaseModel):
 
 class OrderOut(BaseModel):
     id: int
-    product_id: int
+    product_id: int | None = None
+    course_id: int | None = None
+    user_id: int | None = None
+    item_type: str
     customer_name: str | None
     customer_email: str | None
     customer_phone: str | None

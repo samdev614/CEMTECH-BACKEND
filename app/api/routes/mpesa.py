@@ -9,7 +9,9 @@ from pathlib import Path
 from app.core.database import get_db
 from app.models.product import Product, Order
 from app.models.course import Course # Import Course model
+from app.models.enrollment import Enrollment # Import Enrollment
 from app.schemas.product import OrderOut
+from app.core.security import get_current_user
 from app.services.mpesa import stk_push
 from app.services.email import send_payment_confirmation
 from app.core.config import settings
@@ -28,13 +30,15 @@ class BuyRequest(BaseModel):
 
 
 @buy_router.post("/{slug}/buy", response_model=OrderOut)
-async def buy_product(slug: str, body: BuyRequest, db: Session = Depends(get_db)):
+async def buy_product(slug: str, body: BuyRequest, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     product = db.query(Product).filter(Product.slug == slug, Product.is_published == True).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
     order = Order(
         product_id=product.id,
+        user_id=current_user.id if current_user else None,
+        item_type="product",
         customer_name=body.name,
         customer_email=body.email,
         customer_phone=body.phone,
@@ -68,7 +72,7 @@ async def buy_product(slug: str, body: BuyRequest, db: Session = Depends(get_db)
 
 
 @buy_router.post("/courses/{slug}/buy", response_model=OrderOut) # New endpoint for courses
-async def buy_course(slug: str, body: BuyRequest, db: Session = Depends(get_db)):
+async def buy_course(slug: str, body: BuyRequest, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     course = db.query(Course).filter(Course.slug == slug, Course.is_published == True).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -76,6 +80,7 @@ async def buy_course(slug: str, body: BuyRequest, db: Session = Depends(get_db))
     # Create an order for the course
     order = Order(
         course_id=course.id, # Link to course
+        user_id=current_user.id if current_user else None,
         item_type="course", # Specify item type
         customer_name=body.name,
         customer_email=body.email,
@@ -94,9 +99,9 @@ async def buy_course(slug: str, body: BuyRequest, db: Session = Depends(get_db))
 
         resp = await stk_push(
             phone=body.phone,
-            amount=int(product.price),
+            amount=mpesa_amount,
             order_id=order.id,
-            description=product.name,
+            description=course.title,
         )
         order.mpesa_ref = resp.get("CheckoutRequestID", "")
         db.commit()
@@ -151,12 +156,27 @@ async def mpesa_callback(payload: dict, db: Session = Depends(get_db)):
             elif order.item_type == "course" and order.course_id:
                 course = db.query(Course).filter(Course.id == order.course_id).first()
                 if course:
-                    # For courses, instead of a download file, you might update enrollment status
-                    # or grant access. For now, we'll just use the course name.
                     item_name = course.title
-                    # If courses have associated downloadable content, you'd set download_file_path here.
-                    # For now, let's assume course access is handled differently (e.g., via enrollment status).
-                    # If you want to enable a download for courses, you'd need a file_path on the Course model.
+                    
+                    # Automatically enroll the user if logged in
+                    if order.user_id:
+                        enrollment = db.query(Enrollment).filter(
+                            Enrollment.user_id == order.user_id,
+                            Enrollment.course_id == order.course_id
+                        ).first()
+                        
+                        if not enrollment:
+                            enrollment = Enrollment(
+                                user_id=order.user_id,
+                                course_id=order.course_id,
+                                price_paid=order.amount,
+                                status="active",
+                                payment_status="paid"
+                            )
+                            db.add(enrollment)
+                        else:
+                            enrollment.status = "active"
+                            enrollment.payment_status = "paid"
 
             db.commit()
             base_url = settings.MPESA_CALLBACK_URL.split('/api/')[0]

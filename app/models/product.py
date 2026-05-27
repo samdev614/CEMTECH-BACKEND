@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Numeric
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Numeric, ForeignKey
 from sqlalchemy.sql import func
 from app.core.database import Base
 
@@ -25,7 +25,10 @@ class Order(Base):
     __tablename__ = "orders"
 
     id           = Column(Integer, primary_key=True, index=True)
-    product_id   = Column(Integer, nullable=False)
+    product_id   = Column(Integer, ForeignKey("products.id"), nullable=True)
+    course_id    = Column(Integer, ForeignKey("courses.id"), nullable=True)
+    user_id      = Column(Integer, ForeignKey("users.id"), nullable=True)
+    item_type    = Column(String(50), nullable=False, default="product") # "product" or "course"
     customer_name  = Column(String(200))
     customer_email = Column(String(200))
     customer_phone = Column(String(50))
