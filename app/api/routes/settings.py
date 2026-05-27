@@ -10,9 +10,17 @@ from app.services.upload import save_image
 router = APIRouter()
 
 VALID_KEYS = {"software_dev", "video_prod", "marketing"}
+OLD_KEYS = {"Web_dev", "web_dev"}  # Deprecated keys to migrate
 
 def _ensure_defaults(db: Session):
-    """Seed the three rows if they don't exist yet."""
+    """Seed the three rows if they don't exist yet and migrate old keys."""
+    # Migrate old "Web_dev" or "web_dev" to "software_dev"
+    old_entry = db.query(ServiceMedia).filter(ServiceMedia.key.in_(OLD_KEYS)).first()
+    if old_entry:
+        old_entry.key = "software_dev"
+        db.commit()
+    
+    # Create missing valid keys
     for key in VALID_KEYS:
         if not db.query(ServiceMedia).filter(ServiceMedia.key == key).first():
             db.add(ServiceMedia(key=key, media_url=None, media_type="image"))
@@ -42,10 +50,23 @@ async def update_service(
 
     row.media_type = media_type
 
-    if media_type == "image" and media_image and media_image.filename:
-        row.media_url = await save_image(media_image)
-    elif media_type == "video" and media_url:
-        row.media_url = media_url
+    # Handle image uploads
+    if media_type == "image":
+        if media_image and media_image.filename:
+            try:
+                row.media_url = await save_image(media_image)
+            except Exception as e:
+                from fastapi import HTTPException
+                raise HTTPException(status_code=400, detail=f"Image upload failed: {str(e)}")
+        elif media_url:  # Allow setting image URL directly
+            row.media_url = media_url
+    # Handle video URLs
+    elif media_type == "video":
+        if media_url:
+            row.media_url = media_url
+        else:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=400, detail="Video requires a media_url")
 
     db.commit()
     db.refresh(row)
