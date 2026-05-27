@@ -15,6 +15,14 @@ import app.models.portfolio
 import app.models.product
 import app.models.booking
 import app.models.contact
+import app.models.course
+import app.models.documentation
+import app.models.enrollment
+import app.models.preset
+import app.models.rating
+import app.models.settings
+import app.models.template
+import app.models.tool
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)

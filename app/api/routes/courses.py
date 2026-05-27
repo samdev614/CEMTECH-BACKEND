@@ -5,8 +5,10 @@ from typing import List
 from app.core.database import get_db
 from app.core.security import require_admin, get_current_user
 from app.models.course import Course
-from app.models.user import User # Assuming User model is available for enrollment
+from app.models.enrollment import Enrollment
+from app.models.rating import CourseRating
 from app.schemas.course import CourseOut
+from app.schemas.enrollment import CourseRatingOut, CourseRatingCreate
 from app.services.upload import save_image
 from app.core.utils import format_video_embed_url # Import the new utility
 
@@ -27,6 +29,81 @@ def get_course(slug: str, db: Session = Depends(get_db)):
     if not item:
         raise HTTPException(status_code=404, detail="Course not found")
     return item
+
+
+@router.get("/me/enrolled", response_model=List[CourseOut])
+def list_my_enrolled_courses(
+    db: Session = Depends(get_db), 
+    current_user = Depends(get_current_user)
+):
+    """List all courses the current user has successfully enrolled in."""
+    enrolled_ids = db.query(Enrollment.course_id).filter(
+        Enrollment.user_id == current_user.id,
+        Enrollment.status == "active"
+    ).all()
+    
+    # Extract IDs from list of tuples
+    ids = [r[0] for r in enrolled_ids]
+    
+    return db.query(Course).filter(Course.id.in_(ids)).all()
+
+
+@router.get("/{slug}/related", response_model=List[CourseOut])
+def get_related_courses(slug: str, db: Session = Depends(get_db)):
+    course = db.query(Course).filter(Course.slug == slug).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    return db.query(Course).filter(
+        Course.category == course.category,
+        Course.slug != slug,
+        Course.is_published == True
+    ).limit(3).all()
+
+
+@router.post("/{slug}/rate", response_model=CourseRatingOut)
+def rate_course(
+    slug: str, 
+    data: CourseRatingCreate, 
+    db: Session = Depends(get_db), 
+    current_user = Depends(get_current_user)
+):
+    """Allow enrolled students to submit or update a rating for a course."""
+    course = db.query(Course).filter(Course.slug == slug).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    # Ensure user is actually enrolled
+    enrolled = db.query(Enrollment).filter(
+        Enrollment.user_id == current_user.id,
+        Enrollment.course_id == course.id,
+        Enrollment.status == "active"
+    ).first()
+    
+    if not enrolled:
+        raise HTTPException(status_code=403, detail="You must be enrolled to rate this course")
+
+    # Check if a rating already exists to update it, otherwise create new
+    rating = db.query(CourseRating).filter(
+        CourseRating.user_id == current_user.id,
+        CourseRating.course_id == course.id
+    ).first()
+
+    if rating:
+        rating.rating = data.rating
+        rating.comment = data.comment
+    else:
+        rating = CourseRating(
+            user_id=current_user.id,
+            course_id=course.id,
+            rating=data.rating,
+            comment=data.comment
+        )
+        db.add(rating)
+
+    db.commit()
+    db.refresh(rating)
+    return rating
 
 
 @router.get("/admin/all", response_model=List[CourseOut])

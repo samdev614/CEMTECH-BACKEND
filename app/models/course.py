@@ -25,3 +25,12 @@ class Course(Base):
 
     enrollments = relationship("Enrollment", back_populates="course")
     course_ratings = relationship("CourseRating", back_populates="course")
+
+    @property
+    def enrollment_count(self) -> int:
+        return len(self.enrollments)
+
+    @property
+    def average_rating(self) -> float:
+        ratings = [r.rating for r in self.course_ratings]
+        return sum(ratings) / len(ratings) if ratings else 0.0

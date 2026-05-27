@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
+from app.core.database import SessionLocal
 from app.api.routes import (
     auth, blog, bookings, contact, courses, documentation, mpesa,
     portfolio, presets, products, settings, templates, tools
@@ -31,7 +31,7 @@ def _ensure_defaults_settings(db: Session):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup event
-    db = next(get_db()) # Get a database session
+    db = SessionLocal()
     try:
         _ensure_defaults_settings(db)
     finally:

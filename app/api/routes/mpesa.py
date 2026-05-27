@@ -1,5 +1,6 @@
 import secrets
 import mimetypes
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -15,6 +16,8 @@ from app.core.security import get_current_user
 from app.services.mpesa import stk_push
 from app.services.email import send_payment_confirmation
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 # Mounted under /api/products
 buy_router = APIRouter()
@@ -187,12 +190,12 @@ async def mpesa_callback(payload: dict, db: Session = Depends(get_db)):
                     item_name, order.mpesa_ref, download_url,
                 )
             except Exception:
-                pass
+                logger.exception("Failed to send payment confirmation email")
         else:
             order.status = "failed"
             db.commit()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"M-Pesa callback processing error: {str(e)}")
 
     return {"ResultCode": 0, "ResultDesc": "Accepted"}
 

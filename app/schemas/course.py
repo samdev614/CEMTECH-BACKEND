@@ -17,6 +17,8 @@ class CourseOut(BaseModel):
     is_published: bool
     is_featured: bool
     sort_order: int
+    enrollment_count: int = 0
+    average_rating: float = 0.0
     created_at: datetime
 
     model_config = {"from_attributes": True}

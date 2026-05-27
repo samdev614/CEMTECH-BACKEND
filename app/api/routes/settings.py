@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Form, UploadFile, File
+from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from app.core.database import get_db
@@ -26,7 +26,6 @@ async def update_service(
 ):
     row = db.query(ServiceMedia).filter(ServiceMedia.key == key).first()
     if not row:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Service key not found")
 
     row.media_type = media_type
@@ -37,7 +36,6 @@ async def update_service(
             try:
                 row.media_url = await save_image(media_image)
             except Exception as e:
-                from fastapi import HTTPException
                 raise HTTPException(status_code=400, detail=f"Image upload failed: {str(e)}")
         elif media_url:  # Allow setting image URL directly
             row.media_url = media_url
@@ -46,7 +44,6 @@ async def update_service(
         if media_url:
             row.media_url = media_url
         else:
-            from fastapi import HTTPException
             raise HTTPException(status_code=400, detail="Video requires a media_url")
 
     db.commit()
