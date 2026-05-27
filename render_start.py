@@ -25,8 +25,12 @@ def get_local_revisions():
 
 def run_alembic(args):
     cmd = [sys.executable, "-m", "alembic"] + args
-    print("Running:", " ".join(cmd))
-    subprocess.check_call(cmd, cwd=str(ROOT))
+    print("Running:", " ".join(cmd), flush=True)
+    try:
+        subprocess.check_call(cmd, cwd=str(ROOT))
+    except subprocess.CalledProcessError as e:
+        print(f"Alembic command failed with exit code {e.returncode}", file=sys.stderr, flush=True)
+        raise
 
 
 def retrieve_db_revision(engine):
@@ -92,27 +96,33 @@ def parse_args():
 
 
 def main():
-    args = parse_args()
-    db_url = get_db_url()
-    engine = create_engine(db_url)
+    try:
+        args = parse_args()
+        db_url = get_db_url()
+        engine = create_engine(db_url)
 
-    if args.check:
-        current_rev = retrieve_db_revision(engine)
-        local_revisions = get_local_revisions()
-        print(f"DATABASE_URL={db_url}")
-        print(f"current revision={current_rev}")
-        print(f"local revisions={sorted(local_revisions)}")
-        if current_rev and current_rev not in local_revisions:
-            print("WARNING: database revision is not present in local migrations.")
-        print("render_start.py check completed.")
-        return
+        if args.check:
+            current_rev = retrieve_db_revision(engine)
+            local_revisions = get_local_revisions()
+            print(f"DATABASE_URL={db_url}")
+            print(f"current revision={current_rev}")
+            print(f"local revisions={sorted(local_revisions)}")
+            if current_rev and current_rev not in local_revisions:
+                print("WARNING: database revision is not present in local migrations.")
+            print("render_start.py check completed.")
+            return
 
-    upgrade_database(engine)
-    port = os.environ.get("PORT", "8000")
-    os.execvp(
-        sys.executable,
-        [sys.executable, "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", port],
-    )
+        upgrade_database(engine)
+        port = os.environ.get("PORT", "8000")
+        os.execvp(
+            sys.executable,
+            [sys.executable, "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", port],
+        )
+    except Exception as e:
+        print(f"ERROR in render_start.py: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
 
 if __name__ == "__main__":
