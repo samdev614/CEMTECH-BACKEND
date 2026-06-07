@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import ProgrammingError
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.database import SessionLocal
 from app.api.routes import (
@@ -46,6 +47,18 @@ async def lifespan(app: FastAPI):
     # Shutdown event (optional)
 
 app = FastAPI(lifespan=lifespan)
+
+#cors
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://creativeaglemedia.co.ke",
+        "https://www.creativeaglemedia.co.ke",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Include your routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
