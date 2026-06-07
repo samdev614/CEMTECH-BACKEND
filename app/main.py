@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import SessionLocal
 from app.api.routes import (
     auth, blog, bookings, contact, courses, documentation, mpesa,
-    portfolio, presets, products, settings, templates, tools
+    portfolio, presets, products, settings, templates, tools, users
 )
 from app.models.settings import ServiceMedia # Import ServiceMedia model
 
@@ -75,3 +75,4 @@ app.include_router(products.router, prefix="/api/products", tags=["Products"])
 app.include_router(settings.router, prefix="/api/settings", tags=["Settings"])
 app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
 app.include_router(tools.router, prefix="/api/tools", tags=["Tools"])
+app.include_router(users.router, prefix="/api/users", tags=["Users"])
