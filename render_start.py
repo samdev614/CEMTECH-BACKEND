@@ -4,6 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+
 from sqlalchemy import create_engine, inspect, text
 
 ROOT = Path(__file__).resolve().parent
@@ -99,6 +100,7 @@ def main():
     try:
         args = parse_args()
         db_url = get_db_url()
+        import app.models # noqa: F401
         engine = create_engine(db_url)
 
         if args.check:

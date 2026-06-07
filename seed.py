@@ -9,7 +9,8 @@ from app.models.user import User
 import app.models.blog, app.models.portfolio, app.models.product
 import app.models.booking, app.models.contact
 
-Base.metadata.create_all(bind=engine)
+# Removed Base.metadata.create_all(bind=engine) 
+# Rely on 'python render_start.py' (Alembic) to create tables first.
 
 with SessionLocal() as db:
     existing = db.query(User).filter(User.email == settings.ADMIN_EMAIL).first()
