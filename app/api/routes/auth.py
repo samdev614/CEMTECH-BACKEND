@@ -1,11 +1,50 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.security import verify_password, create_access_token, get_current_user
+from app.core.security import verify_password, hash_password, create_access_token, get_current_user
 from app.models.user import User
-from app.schemas.auth import LoginRequest, TokenResponse, UserOut
+from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserOut
 
 router = APIRouter()
+
+
+@router.post("/register", response_model=TokenResponse)
+def register(data: RegisterRequest, db: Session = Depends(get_db)):
+    """Register a new admin user"""
+    # Normalize email
+    email = data.email.strip().lower()
+
+    # Check if user already exists
+    existing_user = db.query(User).filter(User.email == email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
+        )
+
+    # Hash password
+    hashed_password = hash_password(data.password)
+
+    # Create new admin user
+    new_user = User(
+        email=email,
+        hashed_password=hashed_password,
+        full_name=data.full_name,
+        is_active=True,
+        is_admin=True  # New registrations are admin users
+    )
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    # Create JWT token
+    token = create_access_token({"sub": str(new_user.id)})
+
+    return {
+        "access_token": token,
+        "token_type": "bearer"
+    }
 
 
 @router.post("/login", response_model=TokenResponse)

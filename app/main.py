@@ -52,6 +52,7 @@ app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        
         "https://creativeaglemedia.co.ke",
         "https://www.creativeaglemedia.co.ke",
     ],
