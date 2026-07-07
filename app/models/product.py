@@ -25,6 +25,8 @@ class Order(Base):
     __tablename__ = "orders"
 
     id           = Column(Integer, primary_key=True, index=True)
+    invoice_number = Column(String(80), unique=True, index=True)
+    idempotency_key = Column(String(120), unique=True, index=True)
     product_id   = Column(Integer, ForeignKey("products.id"), nullable=True)
     course_id    = Column(Integer, ForeignKey("courses.id"), nullable=True)
     user_id      = Column(Integer, ForeignKey("users.id"), nullable=True)

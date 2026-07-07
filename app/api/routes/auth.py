@@ -10,11 +10,8 @@ router = APIRouter()
 
 @router.post("/register", response_model=TokenResponse)
 def register(data: RegisterRequest, db: Session = Depends(get_db)):
-    """Register a new admin user"""
-    # Normalize email
     email = data.email.strip().lower()
 
-    # Check if user already exists
     existing_user = db.query(User).filter(User.email == email).first()
     if existing_user:
         raise HTTPException(
@@ -22,23 +19,20 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
             detail="Email already registered"
         )
 
-    # Hash password
     hashed_password = hash_password(data.password)
 
-    # Create new admin user
     new_user = User(
         email=email,
         hashed_password=hashed_password,
-        full_name=data.full_name,
+        full_name=data.full_name.strip() if data.full_name else None,
         is_active=True,
-        is_admin=True  # New registrations are admin users
+        is_admin=False,
     )
 
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    # Create JWT token
     token = create_access_token({"sub": str(new_user.id)})
 
     return {

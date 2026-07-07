@@ -1,79 +1,52 @@
-from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import ProgrammingError
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.core.database import SessionLocal
-from app.api.routes import (
-    auth, blog, bookings, contact, courses, documentation, mpesa,
-    portfolio, presets, products, settings, templates, tools, users
-)
-from app.models.settings import ServiceMedia # Import ServiceMedia model
+from app.core.config import settings as app_settings
+from app.api.routes import auth, blog, bookings, contact, courses, mpesa, portfolio, products
 
 
-# Define the _ensure_defaults function here, or import it if it's in a utility file
-VALID_KEYS = {"software_dev", "video_prod", "marketing"}
-OLD_KEYS = {"Web_dev", "web_dev"}  # Deprecated keys to migrate
+def _clean_origin(origin: str | None) -> str | None:
+    if not origin:
+        return None
+    cleaned = origin.strip().rstrip("/")
+    if cleaned in {"FRONTEND_URL", "BACKEND_URL"}:
+        return None
+    return cleaned
 
-def _ensure_defaults_settings(db: Session):
-    """Seed the three rows if they don't exist yet and migrate old keys."""
-    # Migrate old "Web_dev" or "web_dev" to "software_dev"
-    old_entry = db.query(ServiceMedia).filter(ServiceMedia.key.in_(OLD_KEYS)).first()
-    if old_entry:
-        old_entry.key = "software_dev"
-        db.commit()
-    
-    # Create missing valid keys
-    for key in VALID_KEYS:
-        if not db.query(ServiceMedia).filter(ServiceMedia.key == key).first():
-            db.add(ServiceMedia(key=key, media_url=None, media_type="image"))
-            db.commit()
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup event
-    db = SessionLocal()
-    try:
-        _ensure_defaults_settings(db)
-    except ProgrammingError as e:
-        # Table doesn't exist yet - migrations may not have run
-        # Log the issue but don't crash the app
-        print(f"Warning: Could not seed defaults - {e}")
-        print("This is OK during initial migrations. Service media table will be created on next startup.")
-    finally:
-        db.close()
-    yield
-    # Shutdown event (optional)
+CORS_ORIGINS = []
+for origin in [
+    app_settings.FRONTEND_URL,
+    app_settings.BACKEND_URL,
+    "https://creativeaglemedia.co.ke",
+    "https://www.creativeaglemedia.co.ke",
+    # "http://localhost:5173",
+    # "http://127.0.0.1:5173",
+    # "http://localhost:4173",
+    # "http://127.0.0.1:4173",
+]:
+    cleaned = _clean_origin(origin)
+    if cleaned and cleaned not in CORS_ORIGINS:
+        CORS_ORIGINS.append(cleaned)
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 #cors
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        
-        "https://creativeaglemedia.co.ke",
-        "https://www.creativeaglemedia.co.ke",
-    ],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include your routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(blog.router, prefix="/api/blog", tags=["Blog"])
 app.include_router(bookings.router, prefix="/api/bookings", tags=["Bookings"])
 app.include_router(contact.router, prefix="/api/contact", tags=["Contact"])
 app.include_router(courses.router, prefix="/api/courses", tags=["Courses"])
-app.include_router(documentation.router, prefix="/api/documentation", tags=["Documentation"])
-app.include_router(mpesa.buy_router, prefix="/api/products", tags=["M-Pesa"])
+app.include_router(mpesa.product_buy_router, prefix="/api/products", tags=["M-Pesa"])
+app.include_router(mpesa.course_buy_router, prefix="/api/courses", tags=["M-Pesa"])
 app.include_router(mpesa.util_router, prefix="/api", tags=["M-Pesa Utils"])
 app.include_router(portfolio.router, prefix="/api/portfolio", tags=["Portfolio"])
-app.include_router(presets.router, prefix="/api/presets", tags=["Presets"])
 app.include_router(products.router, prefix="/api/products", tags=["Products"])
-app.include_router(settings.router, prefix="/api/settings", tags=["Settings"])
-app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
-app.include_router(tools.router, prefix="/api/tools", tags=["Tools"])
-app.include_router(users.router, prefix="/api/users", tags=["Users"])

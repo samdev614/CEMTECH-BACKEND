@@ -2,6 +2,8 @@ from pydantic_settings import BaseSettings
 from pydantic import field_validator
 from pathlib import Path
 
+BACKEND_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+
 class Settings(BaseSettings):
     DATABASE_URL: str
     SECRET_KEY: str
@@ -41,8 +43,42 @@ class Settings(BaseSettings):
             return v.replace("postgres://", "postgresql://", 1)
         return v
 
+    @field_validator(
+        "DATABASE_URL",
+        "SECRET_KEY",
+        "CLOUDINARY_CLOUD_NAME",
+        "CLOUDINARY_API_KEY",
+        "CLOUDINARY_API_SECRET",
+        "ADMIN_EMAIL",
+        "ADMIN_PASSWORD",
+        "UPLOAD_DIR",
+        "FRONTEND_URL",
+        "BACKEND_URL",
+        "RESEND_API_KEY",
+        "EMAIL_FROM",
+        "ADMIN_EMAIL_NOTIFY",
+        "MPESA_CONSUMER_KEY",
+        "MPESA_CONSUMER_SECRET",
+        "MPESA_SHORTCODE",
+        "MPESA_PASSKEY",
+        "MPESA_CALLBACK_URL",
+        mode="before",
+    )
+    @classmethod
+    def strip_string_values(cls, v):
+        if isinstance(v, str):
+            return v.strip()
+        return v
+
+    @field_validator("MPESA_ENV", mode="before")
+    @classmethod
+    def normalize_mpesa_env(cls, v):
+        if isinstance(v, str):
+            return v.strip().lower()
+        return v
+
     class Config:
-        env_file = ".env"
+        env_file = str(BACKEND_ENV_FILE)
 
 settings = Settings()
 

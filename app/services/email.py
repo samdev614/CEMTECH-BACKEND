@@ -91,16 +91,40 @@ def send_payment_confirmation(
     customer_email: str,
     product_name: str,
     mpesa_receipt: str,
-    download_url: str,
+    download_url: str | None = None,
+    item_type: str = "product",
 ):
-    """Send download link + receipt to customer after successful payment."""
+    """Send a receipt email after successful payment."""
     if not settings.RESEND_API_KEY:
         return
     _client()
+
+    is_course = item_type == "course"
+    subject = (
+        f"Your course enrollment is confirmed — {product_name}"
+        if is_course
+        else f"Your download is ready — {product_name}"
+    )
+    cta_block = f"""
+            <div style="text-align:center;margin:28px 0">
+              <a href="{download_url}"
+                 style="background:#D4A020;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;display:inline-block">
+                ⬇ Download {product_name}
+              </a>
+            </div>
+            <div style="background:#fff3cd;border:1px solid #ffe08a;border-radius:6px;padding:12px 16px;font-size:13px;color:#856404">
+              ⚠ This download link is <strong>one-time use only</strong>. Save your file immediately after downloading.
+            </div>
+    """ if not is_course and download_url else """
+            <div style="background:#eef6ff;border:1px solid #cfe4ff;border-radius:6px;padding:14px 16px;font-size:13px;color:#205081">
+              Your course payment is confirmed. Keep this email for your records.
+            </div>
+    """
+
     resend.Emails.send({
         "from": settings.EMAIL_FROM,
         "to": [customer_email],
-        "subject": f"Your download is ready — {product_name}",
+        "subject": subject,
         "html": f"""
         <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
           <div style="background:#D4A020;padding:20px 32px;border-radius:8px 8px 0 0">
@@ -112,15 +136,7 @@ def send_payment_confirmation(
               Your payment for <strong>{product_name}</strong> was successful.
               Your M-Pesa receipt number is <strong>{mpesa_receipt}</strong>.
             </p>
-            <div style="text-align:center;margin:28px 0">
-              <a href="{download_url}"
-                 style="background:#D4A020;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;display:inline-block">
-                ⬇ Download {product_name}
-              </a>
-            </div>
-            <div style="background:#fff3cd;border:1px solid #ffe08a;border-radius:6px;padding:12px 16px;font-size:13px;color:#856404">
-              ⚠ This download link is <strong>one-time use only</strong>. Save your file immediately after downloading.
-            </div>
+            {cta_block}
             <p style="color:#888;font-size:13px;margin:24px 0 0">— CEMTECH</p>
           </div>
         </div>

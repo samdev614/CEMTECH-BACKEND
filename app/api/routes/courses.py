@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from decimal import Decimal
 from typing import List
 from app.core.database import get_db
@@ -15,9 +15,20 @@ from app.core.utils import format_video_embed_url # Import the new utility
 router = APIRouter()
 
 
+def _clean_text(value: str | None) -> str | None:
+    if value is None:
+        return None
+    cleaned = value.strip()
+    return cleaned or None
+
+
 @router.get("/", response_model=List[CourseOut])
 def list_courses(db: Session = Depends(get_db), category: str = None):
-    q = db.query(Course).filter(Course.is_published == True)
+    q = (
+        db.query(Course)
+        .options(selectinload(Course.enrollments), selectinload(Course.course_ratings))
+        .filter(Course.is_published == True)
+    )
     if category:
         q = q.filter(Course.category == category)
     return q.order_by(Course.sort_order.asc(), Course.created_at.desc()).all()
@@ -25,7 +36,12 @@ def list_courses(db: Session = Depends(get_db), category: str = None):
 
 @router.get("/{slug}", response_model=CourseOut)
 def get_course(slug: str, db: Session = Depends(get_db)):
-    item = db.query(Course).filter(Course.slug == slug, Course.is_published == True).first()
+    item = (
+        db.query(Course)
+        .options(selectinload(Course.enrollments), selectinload(Course.course_ratings))
+        .filter(Course.slug == slug, Course.is_published == True)
+        .first()
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Course not found")
     return item
@@ -45,20 +61,37 @@ def list_my_enrolled_courses(
     # Extract IDs from list of tuples
     ids = [r[0] for r in enrolled_ids]
     
-    return db.query(Course).filter(Course.id.in_(ids)).all()
+    return (
+        db.query(Course)
+        .options(selectinload(Course.enrollments), selectinload(Course.course_ratings))
+        .filter(Course.id.in_(ids))
+        .all()
+    )
 
 
 @router.get("/{slug}/related", response_model=List[CourseOut])
 def get_related_courses(slug: str, db: Session = Depends(get_db)):
-    course = db.query(Course).filter(Course.slug == slug).first()
+    course = (
+        db.query(Course)
+        .options(selectinload(Course.enrollments), selectinload(Course.course_ratings))
+        .filter(Course.slug == slug)
+        .first()
+    )
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
-    return db.query(Course).filter(
-        Course.category == course.category,
-        Course.slug != slug,
-        Course.is_published == True
-    ).limit(3).all()
+    return (
+        db.query(Course)
+        .options(selectinload(Course.enrollments), selectinload(Course.course_ratings))
+        .filter(
+            Course.category == course.category,
+            Course.slug != slug,
+            Course.is_published == True
+        )
+        .order_by(Course.is_featured.desc(), Course.sort_order.asc(), Course.created_at.desc())
+        .limit(3)
+        .all()
+    )
 
 
 @router.post("/{slug}/rate", response_model=CourseRatingOut)
@@ -108,20 +141,32 @@ def rate_course(
 
 @router.get("/admin/all", response_model=List[CourseOut])
 def admin_list_courses(db: Session = Depends(get_db), _=Depends(require_admin)):
-    return db.query(Course).order_by(Course.sort_order.asc()).all()
+    return (
+        db.query(Course)
+        .options(selectinload(Course.enrollments), selectinload(Course.course_ratings))
+        .order_by(Course.sort_order.asc(), Course.created_at.desc())
+        .all()
+    )
 
 
 @router.post("/admin/", response_model=CourseOut)
 async def create_course(
     title: str = Form(...),
     slug: str = Form(...),
+    subtitle: str = Form(None),
     description: str = Form(None),
     category: str = Form(None),
+    language: str = Form(None),
     price: Decimal = Form(...),
     duration: str = Form(None),
     level: str = Form(None),
     instructor: str = Form(None),
     preview_url: str = Form(None),
+    what_you_will_learn: str = Form(None),
+    requirements: str = Form(None),
+    includes: str = Form(None),
+    course_content: str = Form(None),
+    target_audience: str = Form(None),
     is_published: bool = Form(False),
     is_featured: bool = Form(False),
     sort_order: int = Form(0),
@@ -135,10 +180,26 @@ async def create_course(
     image_path = await save_image(cover_image) if cover_image and cover_image.filename else None
 
     item = Course(
-        title=title, slug=slug, description=description, category=category,
-        price=price, duration=duration, level=level, instructor=instructor,
-        preview_url=format_video_embed_url(preview_url), is_published=is_published, is_featured=is_featured,
-        sort_order=sort_order, cover_image=image_path,
+        title=title,
+        slug=slug,
+        subtitle=_clean_text(subtitle),
+        description=_clean_text(description),
+        category=_clean_text(category),
+        language=_clean_text(language) or "English",
+        price=price,
+        duration=_clean_text(duration),
+        level=_clean_text(level),
+        instructor=_clean_text(instructor),
+        preview_url=format_video_embed_url(_clean_text(preview_url)),
+        what_you_will_learn=_clean_text(what_you_will_learn),
+        requirements=_clean_text(requirements),
+        includes=_clean_text(includes),
+        course_content=_clean_text(course_content),
+        target_audience=_clean_text(target_audience),
+        is_published=is_published,
+        is_featured=is_featured,
+        sort_order=sort_order,
+        cover_image=image_path,
     )
     db.add(item)
     db.commit()
@@ -151,13 +212,20 @@ async def update_course(
     item_id: int,
     title: str = Form(None),
     slug: str = Form(None),
+    subtitle: str = Form(None),
     description: str = Form(None),
     category: str = Form(None),
+    language: str = Form(None),
     price: Decimal = Form(None),
     duration: str = Form(None),
     level: str = Form(None),
     instructor: str = Form(None),
     preview_url: str = Form(None),
+    what_you_will_learn: str = Form(None),
+    requirements: str = Form(None),
+    includes: str = Form(None),
+    course_content: str = Form(None),
+    target_audience: str = Form(None),
     is_published: bool = Form(None),
     is_featured: bool = Form(None),
     sort_order: int = Form(None),
@@ -170,9 +238,24 @@ async def update_course(
         raise HTTPException(status_code=404, detail="Course not found")
 
     for field, value in dict(
-        title=title, slug=slug, description=description, category=category,
-        price=price, duration=duration, level=level, instructor=instructor,
-        preview_url=format_video_embed_url(preview_url), is_published=is_published, is_featured=is_featured,
+        title=_clean_text(title),
+        slug=_clean_text(slug),
+        subtitle=_clean_text(subtitle),
+        description=_clean_text(description),
+        category=_clean_text(category),
+        language=_clean_text(language),
+        price=price,
+        duration=_clean_text(duration),
+        level=_clean_text(level),
+        instructor=_clean_text(instructor),
+        preview_url=format_video_embed_url(_clean_text(preview_url)),
+        what_you_will_learn=_clean_text(what_you_will_learn),
+        requirements=_clean_text(requirements),
+        includes=_clean_text(includes),
+        course_content=_clean_text(course_content),
+        target_audience=_clean_text(target_audience),
+        is_published=is_published,
+        is_featured=is_featured,
         sort_order=sort_order,
     ).items():
         if value is not None:

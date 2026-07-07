@@ -4,8 +4,14 @@ from datetime import datetime
 from app.core.config import settings
 
 
+def _looks_like_sandbox_config() -> bool:
+    shortcode = str(settings.MPESA_SHORTCODE or "").strip()
+    callback_url = str(settings.MPESA_CALLBACK_URL or "").strip().lower()
+    return shortcode == "174379" or "sandbox" in callback_url
+
+
 def _base_url() -> str:
-    if settings.MPESA_ENV == "production":
+    if settings.MPESA_ENV == "production" and not _looks_like_sandbox_config():
         return "https://api.safaricom.co.ke"
     return "https://sandbox.safaricom.co.ke"
 
@@ -15,12 +21,27 @@ async def get_access_token() -> str:
         f"{settings.MPESA_CONSUMER_KEY}:{settings.MPESA_CONSUMER_SECRET}".encode()
     ).decode()
     async with httpx.AsyncClient() as client:
+        url = f"{_base_url()}/oauth/v1/generate?grant_type=client_credentials"
         r = await client.get(
-            f"{_base_url()}/oauth/v1/generate?grant_type=client_credentials",
+            url,
             headers={"Authorization": f"Basic {creds}"},
             timeout=15,
         )
-        r.raise_for_status()
+        try:
+            r.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            body = exc.response.text.strip()
+            hint = ""
+            if settings.MPESA_ENV == "production":
+                hint = (
+                    "Your current credentials work on sandbox but not production. "
+                    "Use MPESA_ENV=sandbox for local testing, or switch to live Daraja "
+                    "credentials, a live shortcode/paybill, and a production callback URL."
+                )
+            raise RuntimeError(
+                f"Daraja OAuth failed with {exc.response.status_code} from {_base_url()}. "
+                f"{body or 'No response body returned.'} {hint}".strip()
+            ) from exc
         return r.json()["access_token"]
 
 
@@ -58,11 +79,19 @@ async def stk_push(phone: str, amount: int, order_id: int, description: str) -> 
         "TransactionDesc": description[:13],
     }
     async with httpx.AsyncClient() as client:
+        url = f"{_base_url()}/mpesa/stkpush/v1/processrequest"
         r = await client.post(
-            f"{_base_url()}/mpesa/stkpush/v1/processrequest",
+            url,
             json=payload,
             headers={"Authorization": f"Bearer {token}"},
             timeout=15,
         )
-        r.raise_for_status()
+        try:
+            r.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            body = exc.response.text.strip()
+            raise RuntimeError(
+                f"Daraja STK push failed with {exc.response.status_code} from {_base_url()}. "
+                f"{body or 'No response body returned.'}"
+            ) from exc
         return r.json()

@@ -9,10 +9,11 @@ from pathlib import Path
 
 from app.core.database import get_db
 from app.models.product import Product, Order
-from app.models.course import Course # Import Course model
-from app.models.enrollment import Enrollment # Import Enrollment
+from app.models.course import Course
+from app.models.enrollment import Enrollment
+from app.models.user import User
 from app.schemas.product import OrderOut
-from app.core.security import get_current_user
+from app.core.security import get_current_user, hash_password
 from app.services.mpesa import stk_push
 from app.services.email import send_payment_confirmation
 from app.core.config import settings
@@ -20,9 +21,12 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 # Mounted under /api/products
-buy_router = APIRouter()
+product_buy_router = APIRouter()
 
-# Mounted under /api  (avoids slug collision with /{slug})
+# Mounted under /api/courses
+course_buy_router = APIRouter()
+
+# Mounted under /api
 util_router = APIRouter()
 
 
@@ -32,7 +36,7 @@ class BuyRequest(BaseModel):
     phone: str
 
 
-@buy_router.post("/{slug}/buy", response_model=OrderOut)
+@product_buy_router.post("/{slug}/buy", response_model=OrderOut)
 async def buy_product(slug: str, body: BuyRequest, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     product = db.query(Product).filter(Product.slug == slug, Product.is_published == True).first()
     if not product:
@@ -74,19 +78,34 @@ async def buy_product(slug: str, body: BuyRequest, db: Session = Depends(get_db)
     return order
 
 
-@buy_router.post("/courses/{slug}/buy", response_model=OrderOut) # New endpoint for courses
-async def buy_course(slug: str, body: BuyRequest, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+@course_buy_router.post("/{slug}/buy", response_model=OrderOut)
+async def buy_course(slug: str, body: BuyRequest, db: Session = Depends(get_db)):
     course = db.query(Course).filter(Course.slug == slug, Course.is_published == True).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
+    buyer_email = body.email.strip().lower()
+    buyer_name = body.name.strip()
+
+    customer = db.query(User).filter(User.email == buyer_email).first()
+    if not customer:
+        customer = User(
+            email=buyer_email,
+            hashed_password=hash_password(secrets.token_urlsafe(24)),
+            full_name=buyer_name,
+            is_active=True,
+            is_admin=False,
+        )
+        db.add(customer)
+        db.flush()
+
     # Create an order for the course
     order = Order(
         course_id=course.id, # Link to course
-        user_id=current_user.id if current_user else None,
+        user_id=customer.id,
         item_type="course", # Specify item type
-        customer_name=body.name,
-        customer_email=body.email,
+        customer_name=buyer_name,
+        customer_email=buyer_email,
         customer_phone=body.phone,
         amount=course.price,
         status="pending",
@@ -124,7 +143,7 @@ def order_status(order_id: int, db: Session = Depends(get_db)):
     return {
         "id": order.id,
         "status": order.status,
-        "download_token": order.download_token if order.status == "paid" else None,
+        "download_token": order.download_token if order.status == "paid" and order.item_type == "product" else None,
         "mpesa_receipt": order.mpesa_ref if order.status == "paid" else None,
     }
 
@@ -145,49 +164,49 @@ async def mpesa_callback(payload: dict, db: Session = Depends(get_db)):
             items = {i["Name"]: i.get("Value") for i in stk["CallbackMetadata"]["Item"]}
             order.status = "paid"
             order.mpesa_ref = str(items.get("MpesaReceiptNumber", checkout_id))
-            order.download_token = secrets.token_urlsafe(32)
+            if order.item_type == "product":
+                order.download_token = secrets.token_urlsafe(32)
 
             item_name = "Your purchase"
-            download_file_path = None
+            download_url = None
 
             if order.item_type == "product" and order.product_id:
                 product = db.query(Product).filter(Product.id == order.product_id).first()
                 if product:
                     product.sales_count = (product.sales_count or 0) + 1
                     item_name = product.name
-                    download_file_path = product.file_path
             elif order.item_type == "course" and order.course_id:
                 course = db.query(Course).filter(Course.id == order.course_id).first()
                 if course:
                     item_name = course.title
-                    
-                    # Automatically enroll the user if logged in
-                    if order.user_id:
-                        enrollment = db.query(Enrollment).filter(
-                            Enrollment.user_id == order.user_id,
-                            Enrollment.course_id == order.course_id
-                        ).first()
-                        
-                        if not enrollment:
-                            enrollment = Enrollment(
-                                user_id=order.user_id,
-                                course_id=order.course_id,
-                                price_paid=order.amount,
-                                status="active",
-                                payment_status="paid"
-                            )
-                            db.add(enrollment)
-                        else:
-                            enrollment.status = "active"
-                            enrollment.payment_status = "paid"
+
+                enrollment = db.query(Enrollment).filter(
+                    Enrollment.user_id == order.user_id,
+                    Enrollment.course_id == order.course_id
+                ).first()
+
+                if not enrollment:
+                    enrollment = Enrollment(
+                        user_id=order.user_id,
+                        course_id=order.course_id,
+                        price_paid=order.amount,
+                        status="active",
+                        payment_status="paid"
+                    )
+                    db.add(enrollment)
+                else:
+                    enrollment.status = "active"
+                    enrollment.payment_status = "paid"
 
             db.commit()
-            base_url = settings.MPESA_CALLBACK_URL.split('/api/')[0]
-            download_url = f"{base_url}/api/download/{order.download_token}"
+            if order.item_type == "product" and order.download_token:
+                base_url = settings.MPESA_CALLBACK_URL.split('/api/')[0]
+                download_url = f"{base_url}/api/download/{order.download_token}"
             try:
                 send_payment_confirmation(
                     order.customer_name, order.customer_email,
                     item_name, order.mpesa_ref, download_url,
+                    item_type=order.item_type,
                 )
             except Exception:
                 logger.exception("Failed to send payment confirmation email")

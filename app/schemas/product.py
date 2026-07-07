@@ -41,6 +41,8 @@ class ProductOut(BaseModel):
 
 class OrderOut(BaseModel):
     id: int
+    invoice_number: str | None = None
+    idempotency_key: str | None = None
     product_id: int | None = None
     course_id: int | None = None
     user_id: int | None = None
