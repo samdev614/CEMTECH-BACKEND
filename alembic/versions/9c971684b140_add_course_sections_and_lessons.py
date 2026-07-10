@@ -141,6 +141,21 @@ def _normalize_course_lessons(inspector) -> None:
 
 def _normalize_orders(inspector) -> None:
     table_name = "orders"
+    columns = _column_names(inspector, table_name)
+
+    if "idempotency_key" not in columns:
+        op.add_column(
+            table_name,
+            sa.Column("idempotency_key", sa.String(length=120), nullable=True),
+        )
+        columns.add("idempotency_key")
+
+    if "invoice_number" not in columns:
+        op.add_column(
+            table_name,
+            sa.Column("invoice_number", sa.String(length=80), nullable=True),
+        )
+        columns.add("invoice_number")
 
     _drop_unique_constraint_by_columns(inspector, table_name, ["idempotency_key"])
     _drop_unique_constraint_by_columns(inspector, table_name, ["invoice_number"])
@@ -152,9 +167,9 @@ def _normalize_orders(inspector) -> None:
         if index.get("unique")
     }
 
-    if ("idempotency_key",) not in unique_indexes:
+    if "idempotency_key" in columns and ("idempotency_key",) not in unique_indexes:
         op.create_index(op.f("ix_orders_idempotency_key"), table_name, ["idempotency_key"], unique=True)
-    if ("invoice_number",) not in unique_indexes:
+    if "invoice_number" in columns and ("invoice_number",) not in unique_indexes:
         op.create_index(op.f("ix_orders_invoice_number"), table_name, ["invoice_number"], unique=True)
 
 
