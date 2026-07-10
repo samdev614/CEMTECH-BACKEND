@@ -1,9 +1,10 @@
-from pydantic_settings import BaseSettings
-from pydantic import field_validator
+import os
 from pathlib import Path
 
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 BACKEND_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
-print(f"DEBUG: BACKEND_ENV_FILE path: {BACKEND_ENV_FILE}") # New debug print
 
 class Settings(BaseSettings):
     DATABASE_URL: str
@@ -79,8 +80,7 @@ class Settings(BaseSettings):
             return v.strip().lower()
         return v
 
-    class Config:
-        env_file = str(BACKEND_ENV_FILE)
+    if not os.getenv("RENDER"):
+        model_config = SettingsConfigDict(env_file=str(BACKEND_ENV_FILE))
 
 settings = Settings()
-print(f"DEBUG: MAX_FILE_SIZE_MB loaded from config: {settings.MAX_FILE_SIZE_MB}MB") # Debug print

@@ -1,8 +1,10 @@
 import argparse
 import os
+import socket
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 
 from sqlalchemy import create_engine, inspect, text
@@ -18,6 +20,25 @@ def get_db_url():
     if not db_url:
         raise RuntimeError("DATABASE_URL is not configured.")
     return db_url
+
+
+def validate_db_host(db_url):
+    parsed = urlparse(db_url)
+    host = parsed.hostname
+
+    if not host:
+        raise RuntimeError("DATABASE_URL is missing a hostname.")
+
+    port = parsed.port or 5432
+    try:
+        socket.getaddrinfo(host, port)
+    except socket.gaierror as exc:
+        raise RuntimeError(
+            f"DATABASE_URL host '{host}' could not be resolved. "
+            "If this is a Render internal Postgres URL, the web service and database "
+            "must be in the same region/account and able to use the private network. "
+            "Otherwise update the service to use the database's external URL."
+        ) from exc
 
 
 def get_local_revisions():
@@ -100,6 +121,7 @@ def main():
     try:
         args = parse_args()
         db_url = get_db_url()
+        validate_db_host(db_url)
         import app.models # noqa: F401
         engine = create_engine(db_url)
 
