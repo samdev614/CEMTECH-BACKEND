@@ -137,6 +137,8 @@ def main():
             return
 
         upgrade_database(engine)
+        from app.utils.create_admin import create_admin
+        create_admin()
         port = os.environ.get("PORT", "8000")
         os.execvp(
             sys.executable,
