@@ -1,9 +1,11 @@
 import secrets
 import mimetypes
 import logging
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import datetime, timezone
+from fastapi import APIRouter, Depends, HTTPException, Query, status # Import status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from pathlib import Path
 
@@ -11,10 +13,9 @@ from app.core.database import get_db
 from app.models.product import Product, Order
 from app.models.course import Course
 from app.models.enrollment import Enrollment
-from app.models.user import User
 from app.schemas.product import OrderOut
-from app.core.security import get_current_user, hash_password
-from app.services.mpesa import stk_push
+from app.core.security import get_current_user
+from app.services.mpesa import DarajaError, stk_push, stk_query
 from app.services.email import send_payment_confirmation
 from app.core.config import settings
 
@@ -34,6 +35,111 @@ class BuyRequest(BaseModel):
     name: str
     email: str
     phone: str
+
+
+def _callback_items(stk_callback: dict) -> dict:
+    metadata = stk_callback.get("CallbackMetadata") or {}
+    items = metadata.get("Item") or []
+    parsed = {}
+
+    if isinstance(items, list):
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            name = item.get("Name")
+            if name:
+                parsed[name] = item.get("Value")
+
+    return parsed
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _aware_datetime(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _mpesa_reconciliation_due(order: Order) -> bool:
+    cooldown_seconds = max(int(getattr(settings, "MPESA_STATUS_QUERY_COOLDOWN_SECONDS", 60)), 0)
+    last_checked_at = _aware_datetime(order.mpesa_last_query_at)
+    if last_checked_at is None:
+        return True
+    return (_utcnow() - last_checked_at).total_seconds() >= cooldown_seconds
+
+
+def _mark_mpesa_reconciliation_attempt(order: Order, db: Session) -> None:
+    order.mpesa_last_query_at = _utcnow()
+    db.commit()
+    db.refresh(order)
+
+
+def _order_item_details(order: Order, db: Session) -> tuple[str, str | None]:
+    item_name = "Your purchase"
+    download_url = None
+
+    if order.item_type == "product" and order.product_id:
+        product = db.query(Product).filter(Product.id == order.product_id).first()
+        if product:
+            item_name = product.name
+        if order.download_token:
+            base_url = settings.MPESA_CALLBACK_URL.split('/api/')[0]
+            download_url = f"{base_url}/api/download/{order.download_token}"
+    elif order.item_type == "course" and order.course_id:
+        course = db.query(Course).filter(Course.id == order.course_id).first()
+        if course:
+            item_name = course.title
+
+    return item_name, download_url
+
+
+def _finalize_paid_order(order: Order, db: Session, receipt_number: str | None = None) -> tuple[str, str | None, bool]:
+    transitioned = order.status != "paid"
+
+    if transitioned:
+        order.status = "paid"
+        if receipt_number:
+            order.mpesa_ref = str(receipt_number)
+
+        if order.item_type == "product":
+            order.download_token = order.download_token or secrets.token_urlsafe(32)
+
+        if order.item_type == "product" and order.product_id:
+            product = db.query(Product).filter(Product.id == order.product_id).first()
+            if product:
+                product.sales_count = (product.sales_count or 0) + 1
+        elif order.item_type == "course" and order.course_id:
+            enrollment = db.query(Enrollment).filter(
+                Enrollment.user_id == order.user_id,
+                Enrollment.course_id == order.course_id,
+            ).first()
+
+            if not enrollment:
+                enrollment = Enrollment(
+                    user_id=order.user_id,
+                    course_id=order.course_id,
+                    price_paid=order.amount,
+                    status="active",
+                    payment_status="paid",
+                )
+                db.add(enrollment)
+            else:
+                enrollment.status = "active"
+                enrollment.payment_status = "paid"
+
+        db.commit()
+        db.refresh(order)
+    elif receipt_number and order.mpesa_ref != str(receipt_number):
+        order.mpesa_ref = str(receipt_number)
+        db.commit()
+        db.refresh(order)
+
+    return (*_order_item_details(order, db), transitioned)
 
 
 @product_buy_router.post("/{slug}/buy", response_model=OrderOut)
@@ -73,36 +179,40 @@ async def buy_product(slug: str, body: BuyRequest, db: Session = Depends(get_db)
     except Exception as e:
         order.status = "failed"
         db.commit()
-        raise HTTPException(status_code=502, detail=f"M-Pesa push failed: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"M-Pesa push failed: {str(e)}") # Changed to 502
 
     return order
 
 
 @course_buy_router.post("/{slug}/buy", response_model=OrderOut)
-async def buy_course(slug: str, body: BuyRequest, db: Session = Depends(get_db)):
+async def buy_course(slug: str, body: BuyRequest, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     course = db.query(Course).filter(Course.slug == slug, Course.is_published == True).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
-    buyer_email = body.email.strip().lower()
-    buyer_name = body.name.strip()
-
-    customer = db.query(User).filter(User.email == buyer_email).first()
-    if not customer:
-        customer = User(
-            email=buyer_email,
-            hashed_password=hash_password(secrets.token_urlsafe(24)),
-            full_name=buyer_name,
-            is_active=True,
-            is_admin=False,
+    existing_order = (
+        db.query(Order)
+        .filter(
+            Order.course_id == course.id,
+            Order.item_type == "course",
+            or_(Order.user_id == current_user.id, Order.customer_email == current_user.email),
+            Order.status.in_(["pending", "paid"]),
         )
-        db.add(customer)
-        db.flush()
+        .order_by(Order.created_at.desc())
+        .first()
+    )
+    if existing_order:
+        if existing_order.status == "paid":
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You already own this course.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A payment for this course is already in progress.")
+
+    buyer_name = (body.name.strip() or current_user.full_name or current_user.email).strip()
+    buyer_email = current_user.email
 
     # Create an order for the course
     order = Order(
         course_id=course.id, # Link to course
-        user_id=customer.id,
+        user_id=current_user.id,
         item_type="course", # Specify item type
         customer_name=buyer_name,
         customer_email=buyer_email,
@@ -130,16 +240,65 @@ async def buy_course(slug: str, body: BuyRequest, db: Session = Depends(get_db))
     except Exception as e:
         order.status = "failed"
         db.commit()
-        raise HTTPException(status_code=502, detail=f"M-Pesa push failed: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"M-Pesa push failed: {str(e)}") # Changed to 502
 
     return order
 
 
 @util_router.get("/order/{order_id}/status")
-def order_status(order_id: int, db: Session = Depends(get_db)):
+async def order_status(order_id: int, force_reconcile: bool = Query(False), db: Session = Depends(get_db)):
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
+
+    if order.status == "pending" and order.mpesa_ref and (force_reconcile or _mpesa_reconciliation_due(order)):
+        try:
+            _mark_mpesa_reconciliation_attempt(order, db)
+            query_response = await stk_query(order.mpesa_ref)
+            logger.info(
+                "M-Pesa status query for order %s: %s",
+                order.id,
+                query_response,
+            )
+            result_code_raw = query_response.get("ResultCode")
+            try:
+                result_code = int(result_code_raw)
+            except (TypeError, ValueError):
+                result_code = None
+
+            if result_code == 0:
+                item_name, download_url, transitioned = _finalize_paid_order(order, db)
+                if transitioned:
+                    try:
+                        send_payment_confirmation(
+                            order.customer_name,
+                            order.customer_email,
+                            item_name,
+                            order.mpesa_ref,
+                            download_url,
+                            item_type=order.item_type,
+                        )
+                        logger.info("M-Pesa status query - confirmation email sent for order %s.", order.id)
+                    except Exception:
+                        logger.exception("Failed to send payment confirmation email after status reconciliation")
+            elif result_code in {1032, 1037}:
+                order.status = "failed"
+                db.commit()
+                db.refresh(order)
+        except DarajaError as exc:
+            if exc.status_code in {403, 429}:
+                logger.warning(
+                    "M-Pesa status reconciliation paused for order %s after Daraja %s: %s",
+                    order.id,
+                    exc.status_code,
+                    exc,
+                )
+            else:
+                logger.warning("M-Pesa status reconciliation failed for order %s: %s", order.id, exc)
+        except Exception:
+            logger.exception("M-Pesa status reconciliation failed for order %s", order.id)
+
+    db.refresh(order)
     return {
         "id": order.id,
         "status": order.status,
@@ -151,70 +310,50 @@ def order_status(order_id: int, db: Session = Depends(get_db)):
 @util_router.post("/mpesa/callback")
 async def mpesa_callback(payload: dict, db: Session = Depends(get_db)):
     """Safaricom Daraja STK Push callback."""
+    logger.info(f"M-Pesa callback received: {payload}")
+
     try:
         stk = payload["Body"]["stkCallback"]
-        result_code = stk["ResultCode"]
-        checkout_id = stk["CheckoutRequestID"]
+        result_code = stk.get("ResultCode")
+        checkout_id = stk.get("CheckoutRequestID")
+
+        logger.info(f"M-Pesa callback - CheckoutRequestID: {checkout_id}, ResultCode: {result_code}")
 
         order = db.query(Order).filter(Order.mpesa_ref == checkout_id).first()
         if not order:
+            logger.warning(f"M-Pesa callback - Order not found for CheckoutRequestID: {checkout_id}")
             return {"ResultCode": 0, "ResultDesc": "Accepted"}
 
-        if result_code == 0:
-            items = {i["Name"]: i.get("Value") for i in stk["CallbackMetadata"]["Item"]}
-            order.status = "paid"
-            order.mpesa_ref = str(items.get("MpesaReceiptNumber", checkout_id))
-            if order.item_type == "product":
-                order.download_token = secrets.token_urlsafe(32)
+        try:
+            result_code_value = int(result_code)
+        except (TypeError, ValueError):
+            result_code_value = None
 
-            item_name = "Your purchase"
-            download_url = None
+        if result_code_value == 0:
+            items = _callback_items(stk)
+            mpesa_receipt_number = items.get("MpesaReceiptNumber") or checkout_id
+            logger.info(f"M-Pesa callback - Payment successful for order {order.id}. Receipt: {mpesa_receipt_number}")
 
-            if order.item_type == "product" and order.product_id:
-                product = db.query(Product).filter(Product.id == order.product_id).first()
-                if product:
-                    product.sales_count = (product.sales_count or 0) + 1
-                    item_name = product.name
-            elif order.item_type == "course" and order.course_id:
-                course = db.query(Course).filter(Course.id == order.course_id).first()
-                if course:
-                    item_name = course.title
-
-                enrollment = db.query(Enrollment).filter(
-                    Enrollment.user_id == order.user_id,
-                    Enrollment.course_id == order.course_id
-                ).first()
-
-                if not enrollment:
-                    enrollment = Enrollment(
-                        user_id=order.user_id,
-                        course_id=order.course_id,
-                        price_paid=order.amount,
-                        status="active",
-                        payment_status="paid"
+            item_name, download_url, transitioned = _finalize_paid_order(order, db, mpesa_receipt_number)
+            if transitioned:
+                try:
+                    send_payment_confirmation(
+                        order.customer_name,
+                        order.customer_email,
+                        item_name,
+                        order.mpesa_ref,
+                        download_url,
+                        item_type=order.item_type,
                     )
-                    db.add(enrollment)
-                else:
-                    enrollment.status = "active"
-                    enrollment.payment_status = "paid"
-
-            db.commit()
-            if order.item_type == "product" and order.download_token:
-                base_url = settings.MPESA_CALLBACK_URL.split('/api/')[0]
-                download_url = f"{base_url}/api/download/{order.download_token}"
-            try:
-                send_payment_confirmation(
-                    order.customer_name, order.customer_email,
-                    item_name, order.mpesa_ref, download_url,
-                    item_type=order.item_type,
-                )
-            except Exception:
-                logger.exception("Failed to send payment confirmation email")
+                    logger.info(f"M-Pesa callback - Confirmation email sent for order {order.id}.")
+                except Exception:
+                    logger.exception("Failed to send payment confirmation email")
         else:
             order.status = "failed"
             db.commit()
+            logger.warning(f"M-Pesa callback - Payment failed for order {order.id}. ResultCode: {result_code}")
     except Exception as e:
-        logger.error(f"M-Pesa callback processing error: {str(e)}")
+        logger.error(f"M-Pesa callback processing error: {str(e)}", exc_info=True)
 
     return {"ResultCode": 0, "ResultDesc": "Accepted"}
 

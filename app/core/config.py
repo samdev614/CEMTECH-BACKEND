@@ -3,6 +3,7 @@ from pydantic import field_validator
 from pathlib import Path
 
 BACKEND_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+print(f"DEBUG: BACKEND_ENV_FILE path: {BACKEND_ENV_FILE}") # New debug print
 
 class Settings(BaseSettings):
     DATABASE_URL: str
@@ -18,7 +19,7 @@ class Settings(BaseSettings):
     ADMIN_PASSWORD: str = "password"
 
     UPLOAD_DIR: str = "uploads"
-    MAX_FILE_SIZE_MB: int = 50
+    MAX_FILE_SIZE_MB: int = 500 # Increased max file size for videos
 
     FRONTEND_URL: str = "FRONTEND_URL"   # https://creativeaglemedia.co.ke
     BACKEND_URL: str = "BACKEND_URL" # https://cemtech-backend.onrender.com
@@ -34,6 +35,7 @@ class Settings(BaseSettings):
     MPESA_PASSKEY: str = ""
     MPESA_CALLBACK_URL: str = "https://creativeaglemedia.co.ke/api/mpesa/callback"
     MPESA_ENV: str = "sandbox"            # "sandbox" or "production"
+    MPESA_STATUS_QUERY_COOLDOWN_SECONDS: int = 60
 
     @field_validator("DATABASE_URL")
     @classmethod
@@ -81,8 +83,4 @@ class Settings(BaseSettings):
         env_file = str(BACKEND_ENV_FILE)
 
 settings = Settings()
-
-UPLOAD_PATH = Path(settings.UPLOAD_DIR)
-UPLOAD_PATH.mkdir(parents=True, exist_ok=True)
-(UPLOAD_PATH / "images").mkdir(exist_ok=True)
-(UPLOAD_PATH / "products").mkdir(exist_ok=True)
+print(f"DEBUG: MAX_FILE_SIZE_MB loaded from config: {settings.MAX_FILE_SIZE_MB}MB") # Debug print

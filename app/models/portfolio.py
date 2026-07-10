@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, JSON
 from sqlalchemy.sql import func
 from app.core.database import Base
 
@@ -12,6 +12,7 @@ class Project(Base):
     category     = Column(String(100))   # Web Dev, Video, Marketing
     tags         = Column(String(500))   # comma-separated
     cover_image  = Column(String)
+    gallery_images = Column(JSON, default=list, nullable=True)
     live_url     = Column(String)
     video_url    = Column(String)
     source_url   = Column(String)

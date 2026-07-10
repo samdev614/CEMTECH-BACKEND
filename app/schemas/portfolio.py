@@ -8,6 +8,7 @@ class ProjectCreate(BaseModel):
     use_case: str | None = None
     category: str | None = None
     tags: str | None = None
+    gallery_images: list[str] | None = None
     live_url: str | None = None
     video_url: str | None = None
     source_url: str | None = None
@@ -22,6 +23,7 @@ class ProjectUpdate(BaseModel):
     use_case: str | None = None
     category: str | None = None
     tags: str | None = None
+    gallery_images: list[str] | None = None
     live_url: str | None = None
     video_url: str | None = None
     source_url: str | None = None
@@ -38,6 +40,7 @@ class ProjectOut(BaseModel):
     category: str | None
     tags: str | None
     cover_image: str | None
+    gallery_images: list[str] | None = None
     live_url: str | None
     video_url: str | None
     source_url: str | None

@@ -2,15 +2,21 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from app.core.database import get_db
-from app.core.security import require_admin
+from app.core.security import require_admin, get_current_user # Import get_current_user
 from app.models.booking import Booking
 from app.schemas.booking import BookingCreate, BookingOut
+from app.models.user import User # Import User model to type current_user
 
 router = APIRouter()
 
 @router.post("/", response_model=BookingOut)
-def create_booking(data: BookingCreate, db: Session = Depends(get_db)):
-    booking = Booking(**data.model_dump())
+def create_booking(
+    data: BookingCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user) # Add current_user dependency
+):
+    # Create booking with user_id from the authenticated user
+    booking = Booking(**data.model_dump(), user_id=current_user.id)
     db.add(booking)
     db.commit()
     db.refresh(booking)

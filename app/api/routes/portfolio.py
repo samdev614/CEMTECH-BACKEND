@@ -10,6 +10,14 @@ from app.services.upload import save_image
 
 router = APIRouter()
 
+
+async def _save_gallery_images(files: List[UploadFile]) -> list[str]:
+    images: list[str] = []
+    for file in files:
+        if file and file.filename:
+            images.append(await save_image(file))
+    return images
+
 @router.get("/", response_model=List[ProjectOut])
 def list_projects(db: Session = Depends(get_db), category: str = None):
     q = db.query(Project).filter(Project.is_published == True)
@@ -43,6 +51,7 @@ async def create_project(
     is_published: bool = Form(True),
     sort_order: int = Form(0),
     cover_image: UploadFile = File(None),
+    gallery_images: List[UploadFile] = File([]),
     db: Session = Depends(get_db),
     _=Depends(require_admin),
 ):
@@ -50,11 +59,12 @@ async def create_project(
         raise HTTPException(status_code=400, detail="Slug already exists")
 
     image_path = await save_image(cover_image) if cover_image else None
+    gallery_image_paths = await _save_gallery_images(gallery_images)
     project = Project(
         title=title, slug=slug, description=description, use_case=use_case,
         category=category, tags=tags, live_url=live_url, video_url=format_video_embed_url(video_url),
         source_url=source_url, is_featured=is_featured, is_published=is_published,
-        sort_order=sort_order, cover_image=image_path,
+        sort_order=sort_order, cover_image=image_path, gallery_images=gallery_image_paths,
     )
     db.add(project)
     db.commit()
@@ -77,6 +87,7 @@ async def update_project(
     is_published: bool = Form(None),
     sort_order: int = Form(None),
     cover_image: UploadFile = File(None),
+    gallery_images: List[UploadFile] = File([]),
     db: Session = Depends(get_db),
     _=Depends(require_admin),
 ):
@@ -95,6 +106,10 @@ async def update_project(
 
     if cover_image:
         project.cover_image = await save_image(cover_image)
+
+    new_gallery_images = await _save_gallery_images(gallery_images)
+    if new_gallery_images:
+        project.gallery_images = [*(project.gallery_images or []), *new_gallery_images]
 
     db.commit()
     db.refresh(project)

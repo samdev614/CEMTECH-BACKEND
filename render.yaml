@@ -54,3 +54,5 @@ services:
         sync: false          # set to https://<your-render-url>/api/mpesa/callback after deploy
       - key: MPESA_ENV
         value: sandbox
+      - key: MPESA_STATUS_QUERY_COOLDOWN_SECONDS
+        value: 3

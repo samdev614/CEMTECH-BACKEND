@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Numeric
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+from app.models.course_content import CourseSection, CourseLesson # Import new models
 
 class Course(Base):
     __tablename__ = "courses"
@@ -14,6 +15,7 @@ class Course(Base):
     category     = Column(String(100))
     language     = Column(String(50))
     price        = Column(Numeric(10, 2), nullable=False)
+    is_free      = Column(Boolean, default=False, nullable=False) # New field for free courses
     duration     = Column(String(100))
     level        = Column(String(50))
     instructor   = Column(String(200))
@@ -22,7 +24,7 @@ class Course(Base):
     what_you_will_learn = Column(Text)
     requirements = Column(Text)
     includes     = Column(Text)
-    course_content = Column(Text)
+    course_content = Column(Text) # This will eventually be deprecated or used for a summary
     target_audience = Column(Text)
     is_published = Column(Boolean, default=False)
     is_featured  = Column(Boolean, default=False)
@@ -30,8 +32,9 @@ class Course(Base):
     created_at   = Column(DateTime(timezone=True), server_default=func.now())
     updated_at   = Column(DateTime(timezone=True), onupdate=func.now())
 
-    enrollments = relationship("Enrollment", back_populates="course")
-    course_ratings = relationship("CourseRating", back_populates="course")
+    enrollments = relationship("Enrollment", back_populates="course", cascade="all, delete-orphan")
+    course_ratings = relationship("CourseRating", back_populates="course", cascade="all, delete-orphan")
+    sections = relationship("CourseSection", back_populates="course", order_by="CourseSection.order", cascade="all, delete-orphan")
 
     @property
     def enrollment_count(self) -> int:

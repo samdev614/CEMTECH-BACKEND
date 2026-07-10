@@ -28,7 +28,7 @@ class Order(Base):
     invoice_number = Column(String(80), unique=True, index=True)
     idempotency_key = Column(String(120), unique=True, index=True)
     product_id   = Column(Integer, ForeignKey("products.id"), nullable=True)
-    course_id    = Column(Integer, ForeignKey("courses.id"), nullable=True)
+    course_id    = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"), nullable=True) # Added ondelete="CASCADE"
     user_id      = Column(Integer, ForeignKey("users.id"), nullable=True)
     item_type    = Column(String(50), nullable=False, default="product") # "product" or "course"
     customer_name  = Column(String(200))
@@ -38,6 +38,7 @@ class Order(Base):
     currency     = Column(String(10), default="KES")
     status       = Column(String(50), default="pending")  # pending, paid, failed
     mpesa_ref    = Column(String(100))
+    mpesa_last_query_at = Column(DateTime(timezone=True))
     download_token = Column(String(200))
     download_used  = Column(Boolean, default=False)
     created_at   = Column(DateTime(timezone=True), server_default=func.now())

@@ -33,3 +33,12 @@ class CourseRatingOut(CourseRatingBase):
     updated_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
+# New schema to check enrollment status and existing rating
+class CourseEnrollmentStatus(BaseModel):
+    is_enrolled: bool
+    can_rate: bool
+    purchase_state: str = "none"
+    my_rating: CourseRatingOut | None = None
+
+    model_config = ConfigDict(from_attributes=True)
