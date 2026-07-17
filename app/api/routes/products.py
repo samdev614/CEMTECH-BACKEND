@@ -17,17 +17,11 @@ def list_products(db: Session = Depends(get_db), category: str = None):
         q = q.filter(Product.category == category)
     return q.order_by(Product.sort_order.asc(), Product.created_at.desc()).all()
 
-@router.get("/{slug}", response_model=ProductOut)
-def get_product(slug: str, db: Session = Depends(get_db)):
-    product = db.query(Product).filter(Product.slug == slug, Product.is_published == True).first()
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-    return product
-
 @router.get("/admin/all", response_model=List[ProductOut])
 def admin_list_products(db: Session = Depends(get_db), _=Depends(require_admin)):
     return db.query(Product).order_by(Product.sort_order.asc()).all()
 
+@router.post("/admin", response_model=ProductOut, include_in_schema=False)
 @router.post("/admin/", response_model=ProductOut)
 async def create_product(
     name: str = Form(...),
@@ -107,3 +101,10 @@ def delete_product(product_id: int, db: Session = Depends(get_db), _=Depends(req
 @router.get("/admin/orders/all", response_model=List[OrderOut])
 def admin_list_orders(db: Session = Depends(get_db), _=Depends(require_admin)):
     return db.query(Order).order_by(Order.created_at.desc()).all()
+
+@router.get("/{slug}", response_model=ProductOut)
+def get_product(slug: str, db: Session = Depends(get_db)):
+    product = db.query(Product).filter(Product.slug == slug, Product.is_published == True).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product

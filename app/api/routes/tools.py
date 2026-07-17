@@ -18,19 +18,12 @@ def list_tools(db: Session = Depends(get_db), category: str = None):
     return q.order_by(Tool.sort_order.asc(), Tool.created_at.desc()).all()
 
 
-@router.get("/{slug}", response_model=ToolOut)
-def get_tool(slug: str, db: Session = Depends(get_db)):
-    item = db.query(Tool).filter(Tool.slug == slug, Tool.is_published == True).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="Tool not found")
-    return item
-
-
 @router.get("/admin/all", response_model=List[ToolOut])
 def admin_list_tools(db: Session = Depends(get_db), _=Depends(require_admin)):
     return db.query(Tool).order_by(Tool.sort_order.asc()).all()
 
 
+@router.post("/admin", response_model=ToolOut, include_in_schema=False)
 @router.post("/admin/", response_model=ToolOut)
 async def create_tool(
     name: str = Form(...),
@@ -104,3 +97,11 @@ def delete_tool(item_id: int, db: Session = Depends(get_db), _=Depends(require_a
     db.delete(item)
     db.commit()
     return {"message": "Deleted"}
+
+
+@router.get("/{slug}", response_model=ToolOut)
+def get_tool(slug: str, db: Session = Depends(get_db)):
+    item = db.query(Tool).filter(Tool.slug == slug, Tool.is_published == True).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Tool not found")
+    return item

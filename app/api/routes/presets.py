@@ -19,19 +19,12 @@ def list_presets(db: Session = Depends(get_db), category: str = None):
     return q.order_by(Preset.sort_order.asc(), Preset.created_at.desc()).all()
 
 
-@router.get("/{slug}", response_model=PresetOut)
-def get_preset(slug: str, db: Session = Depends(get_db)):
-    item = db.query(Preset).filter(Preset.slug == slug, Preset.is_published == True).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="Preset not found")
-    return item
-
-
 @router.get("/admin/all", response_model=List[PresetOut])
 def admin_list_presets(db: Session = Depends(get_db), _=Depends(require_admin)):
     return db.query(Preset).order_by(Preset.sort_order.asc()).all()
 
 
+@router.post("/admin", response_model=PresetOut, include_in_schema=False)
 @router.post("/admin/", response_model=PresetOut)
 async def create_preset(
     name: str = Form(...),
@@ -109,3 +102,11 @@ def delete_preset(item_id: int, db: Session = Depends(get_db), _=Depends(require
     db.delete(item)
     db.commit()
     return {"message": "Deleted"}
+
+
+@router.get("/{slug}", response_model=PresetOut)
+def get_preset(slug: str, db: Session = Depends(get_db)):
+    item = db.query(Preset).filter(Preset.slug == slug, Preset.is_published == True).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Preset not found")
+    return item

@@ -19,19 +19,12 @@ def list_templates(db: Session = Depends(get_db), category: str = None):
     return q.order_by(Template.sort_order.asc(), Template.created_at.desc()).all()
 
 
-@router.get("/{slug}", response_model=TemplateOut)
-def get_template(slug: str, db: Session = Depends(get_db)):
-    item = db.query(Template).filter(Template.slug == slug, Template.is_published == True).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="Template not found")
-    return item
-
-
 @router.get("/admin/all", response_model=List[TemplateOut])
 def admin_list_templates(db: Session = Depends(get_db), _=Depends(require_admin)):
     return db.query(Template).order_by(Template.sort_order.asc()).all()
 
 
+@router.post("/admin", response_model=TemplateOut, include_in_schema=False)
 @router.post("/admin/", response_model=TemplateOut)
 async def create_template(
     name: str = Form(...),
@@ -109,3 +102,11 @@ def delete_template(item_id: int, db: Session = Depends(get_db), _=Depends(requi
     db.delete(item)
     db.commit()
     return {"message": "Deleted"}
+
+
+@router.get("/{slug}", response_model=TemplateOut)
+def get_template(slug: str, db: Session = Depends(get_db)):
+    item = db.query(Template).filter(Template.slug == slug, Template.is_published == True).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return item

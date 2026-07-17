@@ -3,7 +3,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings as app_settings
-from app.api.routes import auth, blog, bookings, contact, courses, mpesa, portfolio, products, students
+from app.api.routes import (
+    auth,
+    blog,
+    bookings,
+    contact,
+    courses,
+    documentation,
+    mpesa,
+    portfolio,
+    presets,
+    products,
+    settings,
+    students,
+    templates,
+    tools,
+)
 from app.services.upload import UPLOAD_ROOT
 
 
@@ -54,5 +69,10 @@ app.include_router(mpesa.product_buy_router, prefix="/api/products", tags=["M-Pe
 app.include_router(mpesa.course_buy_router, prefix="/api/courses", tags=["M-Pesa"])
 app.include_router(mpesa.util_router, prefix="/api", tags=["M-Pesa Utils"])
 app.include_router(students.router, prefix="/api/admin", tags=["Admin"])
+app.include_router(documentation.router, prefix="/api/docs", tags=["Documentation"])
 app.include_router(portfolio.router, prefix="/api/portfolio", tags=["Portfolio"])
 app.include_router(products.router, prefix="/api/products", tags=["Products"])
+app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
+app.include_router(presets.router, prefix="/api/presets", tags=["Presets"])
+app.include_router(tools.router, prefix="/api/tools", tags=["Tools"])
+app.include_router(settings.router, prefix="/api/settings", tags=["Settings"])
