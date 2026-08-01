@@ -1,0 +1,190 @@
+INFO:     Will watch for changes in these directories: ['D:\\websites\\CEM BOOTSTRAP\\backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [19092] using WatchFiles
+INFO:     Started server process [37732]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'env\Lib\site-packages\typing_inspection\typing_objects.py', 'env\Lib\site-packages\typing_inspection\introspection.py', 'env\Lib\site-packages\typing_inspection\__init__.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [37732]
+WARNING:  WatchFiles detected changes in 'env\Lib\site-packages\pydantic_core\core_schema.py', 'env\Lib\site-packages\~ydantic_core\core_schema.py', 'env\Lib\site-packages\pydantic_core\__init__.py'. Reloading...
+Process SpawnProcess-2:
+Traceback (most recent call last):
+  File "C:\Python313\Lib\multiprocessing\process.py", line 313, in _bootstrap
+    self.run()
+    ~~~~~~~~^^
+  File "C:\Python313\Lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\uvicorn\_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+    ~~~~~~^^^^^^^^^^^^^^^^^
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\uvicorn\server.py", line 65, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 194, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\base_events.py", line 720, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\uvicorn\server.py", line 69, in serve
+    await self._serve(sockets)
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\uvicorn\server.py", line 76, in _serve
+    config.load()
+    ~~~~~~~~~~~^^
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\uvicorn\config.py", line 434, in load
+    self.loaded_app = import_from_string(self.app)
+                      ~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\uvicorn\importer.py", line 22, in import_from_string
+    raise exc from None
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\uvicorn\importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+  File "C:\Python313\Lib\importlib\__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "D:\websites\CEM BOOTSTRAP\backend\app\main.py", line 1, in <module>
+    from fastapi import FastAPI
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\fastapi\__init__.py", line 7, in <module>
+    from .applications import FastAPI as FastAPI
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\fastapi\applications.py", line 16, in <module>
+    from fastapi import routing
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\fastapi\routing.py", line 24, in <module>
+    from fastapi import params
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\fastapi\params.py", line 5, in <module>
+    from fastapi.openapi.models import Example
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\fastapi\openapi\models.py", line 4, in <module>
+    from fastapi._compat import (
+    ...<6 lines>...
+    )
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\fastapi\_compat.py", line 21, in <module>
+    from fastapi.exceptions import RequestErrorModel
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\fastapi\exceptions.py", line 3, in <module>
+    from pydantic import BaseModel, create_model
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\pydantic\__init__.py", line 411, in __getattr__
+    _deprecated_dynamic_imports = {'FieldValidationInfo', 'GenerateSchema'}
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\importlib\__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\pydantic\main.py", line 33, in <module>
+ModuleNotFoundError: No module named 'pydantic._internal'
+WARNING:  WatchFiles detected changes in 'env\Lib\site-packages\pydantic\tools.py', 'env\Lib\site-packages\pydantic\class_validators.py', 'env\Lib\site-packages\pydantic\main.py', 'env\Lib\site-packages\pydantic\_migration.py', 'env\Lib\site-packages\pydantic\version.py', 'env\Lib\site-packages\pydantic\_internal\_config.py', 'env\Lib\site-packages\~ydantic_core\__init__.py', 'env\Lib\site-packages\pydantic\alias_generators.py', 'env\Lib\site-packages\pydantic\error_wrappers.py', 'env\Lib\site-packages\pydantic\schema.py', 'env\Lib\site-packages\pydantic\utils.py', 'env\Lib\site-packages\pydantic\_internal\_core_utils.py', 'env\Lib\site-packages\pydantic\json.py', 'env\Lib\site-packages\pydantic\datetime_parse.py', 'env\Lib\site-packages\pydantic\_internal\_generate_schema.py', 'env\Lib\site-packages\pydantic\functional_serializers.py', 'env\Lib\site-packages\pydantic\mypy.py', 'env\Lib\site-packages\pydantic\typing.py', 'env\Lib\site-packages\pydantic\_internal\_docs_extraction.py', 'env\Lib\site-packages\pydantic\decorator.py', 'env\Lib\site-packages\pydantic\_internal\_dataclasses.py', 'env\Lib\site-packages\pydantic\fields.py', 'env\Lib\site-packages\pydantic\annotated_handlers.py', 'env\Lib\site-packages\pydantic\_internal\_decorators.py', 'env\Lib\site-packages\pydantic\config.py', 'env\Lib\site-packages\pydantic\_internal\_decorators_v1.py', 'env\Lib\site-packages\pydantic\__init__.py', 'env\Lib\site-packages\pydantic\_internal\_forward_ref.py', 'env\Lib\site-packages\pydantic\type_adapter.py', 'env\Lib\site-packages\pydantic\errors.py', 'env\Lib\site-packages\pydantic\generics.py', 'env\Lib\site-packages\pydantic\parse.py', 'env\Lib\site-packages\pydantic\_internal\__init__.py', 'env\Lib\site-packages\pydantic\env_settings.py', 'env\Lib\site-packages\pydantic\functional_validators.py', 'env\Lib\site-packages\pydantic\warnings.py', 'env\Lib\site-packages\pydantic\validate_call_decorator.py', 'env\Lib\site-packages\pydantic\_internal\_core_metadata.py', 'env\Lib\site-packages\pydantic\types.py', 'env\Lib\site-packages\pydantic\color.py', 'env\Lib\site-packages\pydantic\dataclasses.py', 'env\Lib\site-packages\pydantic\aliases.py', 'env\Lib\site-packages\pydantic\validators.py', 'env\Lib\site-packages\pydantic\networks.py', 'env\Lib\site-packages\pydantic\_internal\_discriminated_union.py', 'env\Lib\site-packages\pydantic\_internal\_git.py', 'env\Lib\site-packages\pydantic\json_schema.py', 'env\Lib\site-packages\pydantic\_internal\_fields.py', 'env\Lib\site-packages\pydantic\_internal\_import_utils.py', 'env\Lib\site-packages\pydantic\root_model.py', 'env\Lib\site-packages\pydantic\_internal\_generics.py'. Reloading...
+INFO:     Started server process [13728]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    Traceback (most recent call last):
+  File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\base_events.py", line 720, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Python313\Lib\asyncio\runners.py", line 194, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 123, in run
+    raise KeyboardInterrupt()
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\starlette\routing.py", line 700, in lifespan
+    await receive()
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\uvicorn\lifespan\on.py", line 137, in receive
+    return await self.receive_queue.get()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\asyncio\queues.py", line 186, in get
+    await getter
+asyncio.exceptions.CancelledError
+
+WARNING:  WatchFiles detected changes in 'env\Lib\site-packages\~ydantic\_internal\_generics.py', 'env\Lib\site-packages\pydantic_settings\sources\providers\pyproject.py', 'env\Lib\site-packages\~ydantic\plugin\_loader.py', 'env\Lib\site-packages\~ydantic\v1\_hypothesis_plugin.py', 'env\Lib\site-packages\pydantic\_internal\_known_annotated_metadata.py', 'env\Lib\site-packages\pydantic\_internal\_repr.py', 'env\Lib\site-packages\pydantic\_internal\_signature.py', 'env\Lib\site-packages\~ydantic\v1\error_wrappers.py', 'env\Lib\site-packages\pydantic\deprecated\copy_internals.py', 'env\Lib\site-packages\pydantic\v1\class_validators.py', 'env\Lib\site-packages\~ydantic\v1\json.py', 'env\Lib\site-packages\~ydantic\_internal\_mock_val_ser.py', 'env\Lib\site-packages\pydantic_settings\__init__.py', 'env\Lib\site-packages\pydantic_settings\sources\providers\gcp.py', 'env\Lib\site-packages\~ydantic\_internal\_docs_extraction.py', 'env\Lib\site-packages\~ydantic\v1\parse.py', 'env\Lib\site-packages\pydantic\v1\typing.py', 'env\Lib\site-packages\pydantic\v1\mypy.py', 'env\Lib\site-packages\pydantic\_internal\_utils.py', 'env\Lib\site-packages\~ydantic\v1\main.py', 'env\Lib\site-packages\pydantic\v1\error_wrappers.py', 'env\Lib\site-packages\pydantic\experimental\arguments_schema.py', 'env\Lib\site-packages\pydantic\_internal\_validate_call.py', 'env\Lib\site-packages\~ydantic\_internal\_discriminated_union.py', 'env\Lib\site-packages\~ydantic\v1\datetime_parse.py', 'env\Lib\site-packages\pydantic\v1\networks.py', 'env\Lib\site-packages\pydantic_settings\sources\providers\env.py', 'env\Lib\site-packages\~ydantic\functional_validators.py', 'env\Lib\site-packages\pydantic\_internal\_schema_generation_shared.py', 'env\Lib\site-packages\~ydantic\_internal\__init__.py', 'env\Lib\site-packages\pydantic\experimental\pipeline.py', 'env\Lib\site-packages\~ydantic\decorator.py', 'env\Lib\site-packages\~ydantic\networks.py', 'env\Lib\site-packages\~ydantic\_internal\_generate_schema.py', 'env\Lib\site-packages\~ydantic\v1\color.py', 'env\Lib\site-packages\~ydantic\_internal\_typing_extra.py', 'env\Lib\site-packages\pydantic\plugin\__init__.py', 'env\Lib\site-packages\pydantic\v1\tools.py', 'env\Lib\site-packages\pydantic\v1\validators.py', 'env\Lib\site-packages\~ydantic\deprecated\__init__.py', 'env\Lib\site-packages\~ydantic\v1\fields.py', 'env\Lib\site-packages\pydantic\v1\schema.py', 'env\Lib\site-packages\pydantic\_internal\_internal_dataclass.py', 'env\Lib\site-packages\pydantic\v1\color.py', 'env\Lib\site-packages\pydantic\v1\utils.py', 'env\Lib\site-packages\pydantic_settings\sources\providers\dotenv.py', 'env\Lib\site-packages\pydantic_settings\sources\providers\toml.py', 'env\Lib\site-packages\~ydantic\json_schema.py', 'env\Lib\site-packages\pydantic\deprecated\config.py', 'env\Lib\site-packages\pydantic_settings\sources\providers\secrets.py', 'env\Lib\site-packages\~ydantic\v1\validators.py', 'env\Lib\site-packages\~ydantic\v1\tools.py', 'env\Lib\site-packages\pydantic\_internal\_schema_gather.py', 'env\Lib\site-packages\pydantic\deprecated\json.py', 'env\Lib\site-packages\~ydantic\main.py', 'env\Lib\site-packages\~ydantic\v1\__init__.py', 'env\Lib\site-packages\~ydantic\deprecated\decorator.py', 'env\Lib\site-packages\pydantic\plugin\_loader.py', 'env\Lib\site-packages\pydantic\v1\errors.py', 'env\Lib\site-packages\pydantic\_internal\_mock_val_ser.py', 'env\Lib\site-packages\pydantic_settings\sources\types.py', 'env\Lib\site-packages\~ydantic\functional_serializers.py', 'env\Lib\site-packages\pydantic\v1\main.py', 'env\Lib\site-packages\pydantic\v1\fields.py', 'env\Lib\site-packages\~ydantic\_internal\_schema_generation_shared.py', 'env\Lib\site-packages\~ydantic\deprecated\tools.py', 'env\Lib\site-packages\~ydantic\deprecated\json.py', 'env\Lib\site-packages\pydantic\v1\env_settings.py', 'env\Lib\site-packages\~ydantic\parse.py', 'env\Lib\site-packages\pydantic\_internal\_model_construction.py', 'env\Lib\site-packages\~ydantic\deprecated\class_validators.py', 'env\Lib\site-packages\~ydantic\v1\env_settings.py', 'env\Lib\site-packages\~ydantic\utils.py', 'env\Lib\site-packages\~ydantic\v1\types.py', 'env\Lib\site-packages\pydantic\v1\version.py', 'env\Lib\site-packages\~ydantic\_internal\_dataclasses.py', 'env\Lib\site-packages\~ydantic\_internal\_std_types_schema.py', 'env\Lib\site-packages\~ydantic\_internal\_serializers.py', 'env\Lib\site-packages\~ydantic\_internal\_import_utils.py', 'env\Lib\site-packages\~ydantic\v1\class_validators.py', 'env\Lib\site-packages\~ydantic\_internal\_forward_ref.py', 'env\Lib\site-packages\~ydantic\experimental\__init__.py', 'env\Lib\site-packages\~ydantic\v1\networks.py', 'env\Lib\site-packages\~ydantic\fields.py', 'env\Lib\site-packages\pydantic\v1\dataclasses.py', 'env\Lib\site-packages\pydantic\_internal\_validators.py', 'env\Lib\site-packages\pydantic\v1\json.py', 'env\Lib\site-packages\~ydantic\v1\errors.py', 'env\Lib\site-packages\~ydantic\validate_call_decorator.py', 'env\Lib\site-packages\pydantic\deprecated\parse.py', 'env\Lib\site-packages\~ydantic\_internal\_utils.py', 'env\Lib\site-packages\~ydantic\color.py', 'env\Lib\site-packages\pydantic_settings\sources\base.py', 'env\Lib\site-packages\~ydantic\deprecated\config.py', 'env\Lib\site-packages\~ydantic\_migration.py', 'env\Lib\site-packages\~ydantic\v1\generics.py', 'env\Lib\site-packages\pydantic_settings\main.py', 'env\Lib\site-packages\~ydantic\config.py', 'env\Lib\site-packages\~ydantic\type_adapter.py', 'env\Lib\site-packages\~ydantic\v1\dataclasses.py', 'env\Lib\site-packages\~ydantic\_internal\_known_annotated_metadata.py', 'env\Lib\site-packages\pydantic\v1\types.py', 'env\Lib\site-packages\~ydantic\deprecated\parse.py', 'env\Lib\site-packages\~ydantic\error_wrappers.py', 'env\Lib\site-packages\~ydantic\json.py', 'env\Lib\site-packages\pydantic\v1\generics.py', 'env\Lib\site-packages\~ydantic\_internal\_config.py', 'env\Lib\site-packages\~ydantic\_internal\_repr.py', 'env\Lib\site-packages\pydantic\_internal\_typing_extra.py', 'env\Lib\site-packages\~ydantic\v1\mypy.py', 'env\Lib\site-packages\pydantic\deprecated\tools.py', 'env\Lib\site-packages\pydantic\_internal\_namespace_utils.py', 'env\Lib\site-packages\~ydantic\_internal\_core_utils.py', 'env\Lib\site-packages\pydantic_settings\sources\providers\json.py', 'env\Lib\site-packages\pydantic\v1\annotated_types.py', 'env\Lib\site-packages\pydantic_settings\utils.py', 'env\Lib\site-packages\~ydantic\errors.py', 'env\Lib\site-packages\pydantic_settings\version.py', 'env\Lib\site-packages\~ydantic\_internal\_validate_call.py', 'env\Lib\site-packages\~ydantic\_internal\_fields.py', 'env\Lib\site-packages\pydantic\deprecated\decorator.py', 'env\Lib\site-packages\pydantic\deprecated\__init__.py', 'env\Lib\site-packages\pydantic\v1\config.py', 'env\Lib\site-packages\pydantic\deprecated\class_validators.py', 'env\Lib\site-packages\~ydantic\__init__.py', 'env\Lib\site-packages\pydantic\v1\__init__.py', 'env\Lib\site-packages\~ydantic\plugin\_schema_validator.py', 'env\Lib\site-packages\~ydantic\validators.py', 'env\Lib\site-packages\~ydantic\deprecated\copy_internals.py', 'env\Lib\site-packages\pydantic\v1\datetime_parse.py', 'env\Lib\site-packages\~ydantic\tools.py', 'env\Lib\site-packages\pydantic_settings\exceptions.py', 'env\Lib\site-packages\~ydantic\_internal\_core_metadata.py', 'env\Lib\site-packages\~ydantic\v1\schema.py', 'env\Lib\site-packages\~ydantic\v1\utils.py', 'env\Lib\site-packages\~ydantic\schema.py', 'env\Lib\site-packages\~ydantic\v1\typing.py', 'env\Lib\site-packages\~ydantic\_internal\_git.py', 'env\Lib\site-packages\pydantic_settings\sources\providers\azure.py', 'env\Lib\site-packages\~ydantic\env_settings.py', 'env\Lib\site-packages\~ydantic\types.py', 'env\Lib\site-packages\~ydantic\v1\decorator.py', 'env\Lib\site-packages\~ydantic\v1\config.py', 'env\Lib\site-packages\pydantic\v1\parse.py', 'env\Lib\site-packages\~ydantic\generics.py', 'env\Lib\site-packages\pydantic\experimental\__init__.py', 'env\Lib\site-packages\~ydantic\version.py', 'env\Lib\site-packages\~ydantic\plugin\__init__.py', 'env\Lib\site-packages\pydantic_settings\sources\providers\aws.py', 'env\Lib\site-packages\~ydantic\v1\version.py', 'env\Lib\site-packages\~ydantic\_internal\_decorators_v1.py', 'env\Lib\site-packages\~ydantic\_internal\_decorators.py', 'env\Lib\site-packages\~ydantic\root_model.py', 'env\Lib\site-packages\pydantic_settings\sources\__init__.py', 'env\Lib\site-packages\~ydantic\class_validators.py', 'env\Lib\site-packages\~ydantic\alias_generators.py', 'env\Lib\site-packages\~ydantic\warnings.py', 'env\Lib\site-packages\pydantic\v1\decorator.py', 'env\Lib\site-packages\pydantic_settings\sources\providers\yaml.py', 'env\Lib\site-packages\~ydantic\dataclasses.py', 'env\Lib\site-packages\pydantic_settings\sources\providers\__init__.py', 'env\Lib\site-packages\pydantic_settings\sources\utils.py', 'env\Lib\site-packages\~ydantic\_internal\_validators.py', 'env\Lib\site-packages\~ydantic\datetime_parse.py', 'env\Lib\site-packages\~ydantic\annotated_handlers.py', 'env\Lib\site-packages\~ydantic\_internal\_signature.py', 'env\Lib\site-packages\~ydantic\_internal\_internal_dataclass.py', 'env\Lib\site-packages\~ydantic\mypy.py', 'env\Lib\site-packages\~ydantic\typing.py', 'env\Lib\site-packages\~ydantic\experimental\pipeline.py', 'env\Lib\site-packages\~ydantic\v1\annotated_types.py', 'env\Lib\site-packages\~ydantic\_internal\_model_construction.py', 'env\Lib\site-packages\pydantic_settings\sources\providers\cli.py', 'env\Lib\site-packages\~ydantic\aliases.py', 'env\Lib\site-packages\pydantic\plugin\_schema_validator.py', 'env\Lib\site-packages\pydantic\v1\_hypothesis_plugin.py', 'env\Lib\site-packages\pydantic\_internal\_serializers.py'. Reloading...
+INFO:     Started server process [10388]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    Traceback (most recent call last):
+  File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\base_events.py", line 720, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Python313\Lib\asyncio\runners.py", line 194, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 123, in run
+    raise KeyboardInterrupt()
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\starlette\routing.py", line 700, in lifespan
+    await receive()
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\uvicorn\lifespan\on.py", line 137, in receive
+    return await self.receive_queue.get()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\asyncio\queues.py", line 186, in get
+    await getter
+asyncio.exceptions.CancelledError
+
+WARNING:  WatchFiles detected changes in 'env\Lib\site-packages\~ydantic_settings\sources.py', 'env\Lib\site-packages\~ydantic_settings\main.py', 'env\Lib\site-packages\~ydantic_settings\__init__.py', 'env\Lib\site-packages\~ydantic_settings\version.py', 'env\Lib\site-packages\~ydantic_settings\utils.py'. Reloading...
+INFO:     Started server process [21900]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    Traceback (most recent call last):
+  File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\base_events.py", line 720, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Python313\Lib\asyncio\runners.py", line 194, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 123, in run
+    raise KeyboardInterrupt()
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\starlette\routing.py", line 700, in lifespan
+    await receive()
+  File "D:\websites\CEM BOOTSTRAP\backend\env\Lib\site-packages\uvicorn\lifespan\on.py", line 137, in receive
+    return await self.receive_queue.get()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\asyncio\queues.py", line 186, in get
+    await getter
+asyncio.exceptions.CancelledError
+
+INFO:     Started server process [13840]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
