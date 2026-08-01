@@ -10,6 +10,7 @@ from app.api.routes import (
     contact,
     courses,
     documentation,
+    gallery,
     mpesa,
     portfolio,
     presets,
@@ -37,10 +38,14 @@ for origin in [
     app_settings.BACKEND_URL,
     "https://creativeaglemedia.co.ke",
     "https://www.creativeaglemedia.co.ke",
-    "http://localhost:5173", # Uncommented
-    "http://127.0.0.1:5173", # Uncommented
-    # "http://localhost:4173",
-    # "http://127.0.0.1:4173",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://localhost:5175",
+    "http://127.0.0.1:5175",
+    "http://localhost:4173",
+    "http://127.0.0.1:4173",
 ]:
     cleaned = _clean_origin(origin)
     if cleaned and cleaned not in CORS_ORIGINS:
@@ -70,6 +75,7 @@ app.include_router(mpesa.course_buy_router, prefix="/api/courses", tags=["M-Pesa
 app.include_router(mpesa.util_router, prefix="/api", tags=["M-Pesa Utils"])
 app.include_router(students.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(documentation.router, prefix="/api/docs", tags=["Documentation"])
+app.include_router(gallery.router, prefix="/api/gallery", tags=["Gallery"])
 app.include_router(portfolio.router, prefix="/api/portfolio", tags=["Portfolio"])
 app.include_router(products.router, prefix="/api/products", tags=["Products"])
 app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])

@@ -17,6 +17,7 @@ import app.models.booking
 import app.models.contact
 import app.models.course
 import app.models.documentation
+import app.models.gallery
 import app.models.enrollment
 import app.models.preset
 import app.models.rating

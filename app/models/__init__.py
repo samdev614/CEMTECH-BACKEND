@@ -1,5 +1,6 @@
 from app.models.user import User  # noqa: F401
 from app.models.enrollment import Enrollment  # noqa: F401
+from app.models.gallery import GalleryItem  # noqa: F401
 from app.models.rating import CourseRating  # noqa: F401
 from app.models.course import Course  # noqa: F401
 from app.models.course_content import CourseSection, CourseLesson  # noqa: F401
